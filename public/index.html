@@ -59,6 +59,7 @@
   #sheet{max-height:88vh;overflow-y:auto}
   #photoBox{position:relative;height:170px;border-radius:14px;overflow:hidden;margin-bottom:10px;background:#cfd8dc}
   #photoMap{position:absolute;inset:0}
+  #photoPano{position:absolute;inset:0;display:none;z-index:400;background-repeat:repeat-x}
   #photoImg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;z-index:400}
   .photoTag{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.62);color:#fff;font-size:12px;font-weight:700;padding:5px 9px;border-radius:12px;z-index:500;cursor:pointer;user-select:none}
   #svLink{position:absolute;right:8px;bottom:8px;background:#fff;color:#1a73e8;font-size:13px;font-weight:800;padding:6px 10px;border-radius:14px;z-index:500;text-decoration:none;box-shadow:0 1px 4px rgba(0,0,0,.3)}
@@ -152,7 +153,7 @@
 <button id="layerBtn" class="ui" title="Change map type"><span>Satellite</span></button>
 <div id="routeChip" class="ui"></div>
 <div id="sheet" class="ui"><div class="grab"></div>
-  <div id="photoBox"><div id="photoMap"></div><img id="photoImg" alt=""><div class="photoTag" id="photoTag">🛰️ Aerial view</div><a id="svLink" target="_blank" rel="noopener">👀 Street View ↗</a></div>
+  <div id="photoBox"><div id="photoMap"></div><img id="photoImg" alt=""><div id="photoPano"></div><div class="photoTag" id="photoTag">🛰️ Aerial view</div><a id="svLink" target="_blank" rel="noopener">👀 Street View ↗</a></div>
   <div id="sheetBody"></div></div>
 <div id="toast" class="ui"></div>
 
@@ -473,33 +474,37 @@ async function streetPhoto(p){
   try{
     for(const r of [0.0007,0.0018]){ // ~60 m, then ~150 m around the building
       const bbox=[p.lng-r*1.5,p.lat-r,p.lng+r*1.5,p.lat+r].join(',');
-      const res=await fetch(`https://graph.mapillary.com/images?access_token=${encodeURIComponent(MAPILLARY_TOKEN)}&fields=id,thumb_1024_url,compass_angle,computed_compass_angle,computed_geometry,geometry,captured_at,is_pano&bbox=${bbox}&limit=60`);
+      const res=await fetch(`https://graph.mapillary.com/images?access_token=${encodeURIComponent(MAPILLARY_TOKEN)}&fields=id,thumb_1024_url,thumb_2048_url,compass_angle,computed_compass_angle,computed_geometry,geometry,captured_at,is_pano&bbox=${bbox}&limit=60`);
       const j=await res.json();
       for(const im of (j.data||[])){
         const g=(im.computed_geometry||im.geometry);if(!g||!im.thumb_1024_url)continue;
         const at={lat:g.coordinates[1],lng:g.coordinates[0]};
-        const d=dist(at,p);if(d<4)continue;
+        const d=dist(at,p);if(d<4||d>120)continue;
         const want=bearing(at,p),face=im.computed_compass_angle??im.compass_angle;
-        let off=Math.abs(((want-face)%360+540)%360-180);
-        if(im.is_pano)off=Math.min(off,40); // 360° photos can be turned to face it
-        if(off>55)continue;
-        const score=off*1.2+d+(im.is_pano?15:0)-(im.captured_at||0)/3.15e10*2; // facing it, close, newer
-        if(!best||score<best.score)best={score,url:im.thumb_1024_url,when:im.captured_at};
+        const off=Math.abs(((want-face)%360+540)%360-180);
+        let score;
+        if(im.is_pano){score=d*1.3+30}            // 360° photo: we can turn it to face the building
+        else{if(off>35)continue;score=off*1.5+d}  // normal photo: must already point at it
+        score-=(im.captured_at||0)/3.15e10*2;     // newer is a bit better
+        // fraction across the 360° image where the building is (image centre = camera heading)
+        const frac=(((want-face)%360+540)%360-180)/360+0.5;
+        if(!best||score<best.score)best={score,url:(im.is_pano&&im.thumb_2048_url)||im.thumb_1024_url,when:im.captured_at,pano:!!im.is_pano,frac,d};
       }
       if(best)break;
     }
   }catch(e){}
-  const out=best?{url:best.url,when:best.when}:null;
+  const out=best?{url:best.url,when:best.when,pano:best.pano,frac:best.frac}:null;
   photoCache[key]=out;return out;
 }
 function showPhoto(on){
-  showingPhoto=on;$('photoImg').style.display=on?'block':'none';
+  showingPhoto=on;const pano=$('photoImg').dataset.pano==='1';
+  $('photoImg').style.display=on&&!pano?'block':'none';$('photoPano').style.display=on&&pano?'block':'none';
   const lbl=$('photoImg').dataset.label||'📷 Photo';
   $('photoTag').textContent=on?lbl+' · tap for aerial':($('photoImg').dataset.ok?'🛰️ Aerial · tap for photo':'🛰️ Aerial view');
 }
 $('photoTag').onclick=()=>{if($('photoImg').dataset.ok)showPhoto(!showingPhoto)};
 function setupPhoto(p){
-  photoFor=p.id;const img=$('photoImg');img.style.display='none';delete img.dataset.ok;delete img.dataset.label;img.removeAttribute('src');showPhoto(false);
+  photoFor=p.id;const img=$('photoImg');img.style.display='none';$('photoPano').style.display='none';delete img.dataset.ok;delete img.dataset.label;delete img.dataset.pano;img.removeAttribute('src');showPhoto(false);
   $('svLink').href=`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${p.lat},${p.lng}`;
   if(!miniMap){
     miniMap=L.map('photoMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,touchZoom:false,boxZoom:false,keyboard:false,tap:false});
@@ -508,10 +513,18 @@ function setupPhoto(p){
   }
   miniMap.setView([p.lat,p.lng],18,{animate:false});miniPin.setLatLng([p.lat,p.lng]).setIcon(pinIcon(p));
   setTimeout(()=>{miniMap.invalidateSize();miniMap.setView([p.lat,p.lng],18,{animate:false})},300);
-  const use=(url,label)=>{img.onload=()=>{if(photoFor!==p.id)return;img.dataset.ok=1;img.dataset.label=label;showPhoto(true)};img.src=url};
+  const use=(url,label,pano)=>{img.onload=()=>{
+      if(photoFor!==p.id)return;img.dataset.ok=1;img.dataset.label=label;
+      if(pano){ // show a ~80° slice of the 360° photo, centred on the building
+        img.dataset.pano='1';const box=$('photoBox'),W=box.clientWidth,H=box.clientHeight,el=$('photoPano');
+        const bw=W*4.5,bh=bw/2; // 360/4.5 = 80° wide
+        el.style.backgroundImage=`url("${url}")`;el.style.backgroundSize=`${bw}px ${bh}px`;
+        el.style.backgroundPosition=`${-(pano.frac*bw-W/2)}px ${-(bh*0.5-H*0.55)}px`;
+      }
+      showPhoto(true)};img.src=url};
   streetPhoto(p).then(sp=>{
     if(photoFor!==p.id)return;
-    if(sp){use(sp.url,'📷 Mapillary'+(sp.when?' · '+new Date(sp.when).getFullYear():''));return}
+    if(sp){use(sp.url,'📷 Mapillary'+(sp.when?' · '+new Date(sp.when).getFullYear():''),sp.pano?sp:null);return}
     photoURL(p).then(url=>{if(url&&photoFor===p.id)use(url,'📷 Photo')});
   });
 }
@@ -682,8 +695,9 @@ $('lbBtn').onclick=leaderboard;
 
 
 // ---------- version + what's new ----------
-const VERSION='0.7.0';
+const VERSION='0.7.1';
 const CHANGELOG=[
+  ['0.7.1','Better building photos',['360° street photos now zoom in on the building instead of showing the whole stretched-out view','Prefers normal photos aimed right at the building']],
   ['0.7.0','Building photos',['Tap a building to see a real street photo of it (from Mapillary) when one exists','Aerial photo of every building, and a 👀 Street View button','Version number and this What\'s New screen']],
   ['0.6.0','Maps upgrade',['🛰️ Satellite view — tap the square in the bottom-left','Blue “YOU” locator dot that points where you’re heading','🧭 Directions to any building, with real walking routes']],
   ['0.5.0','Real Buckley',['Free OpenStreetMap map (no more “API key required”)','Real Buckley places load much more reliably']],
