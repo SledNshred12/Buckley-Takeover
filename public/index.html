@@ -62,6 +62,9 @@
   #photoPano{position:absolute;inset:0;display:none;z-index:400;background-repeat:repeat-x}
   #photoImg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;z-index:400}
   .photoTag{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.62);color:#fff;font-size:12px;font-weight:700;padding:5px 9px;border-radius:12px;z-index:500;cursor:pointer;user-select:none}
+  .photoBtn{position:absolute;right:8px;top:8px;z-index:500;border:0;background:rgba(0,0,0,.62);color:#fff;font-size:12px;font-weight:700;padding:5px 9px;border-radius:12px;display:none;cursor:pointer}
+  #dragHint{position:absolute;left:8px;bottom:10px;z-index:500;background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;padding:4px 8px;border-radius:10px;display:none;pointer-events:none}
+  #photoPano{cursor:grab;touch-action:pan-y}
   #svLink{position:absolute;right:8px;bottom:8px;background:#fff;color:#1a73e8;font-size:13px;font-weight:800;padding:6px 10px;border-radius:14px;z-index:500;text-decoration:none;box-shadow:0 1px 4px rgba(0,0,0,.3)}
   .grab{width:40px;height:5px;background:#ccc;border-radius:3px;margin:0 auto 10px}
   #sheet h2{margin:0;font-size:20px}
@@ -153,7 +156,7 @@
 <button id="layerBtn" class="ui" title="Change map type"><span>Satellite</span></button>
 <div id="routeChip" class="ui"></div>
 <div id="sheet" class="ui"><div class="grab"></div>
-  <div id="photoBox"><div id="photoMap"></div><img id="photoImg" alt=""><div id="photoPano"></div><div class="photoTag" id="photoTag">🛰️ Aerial view</div><a id="svLink" target="_blank" rel="noopener">👀 Street View ↗</a></div>
+  <div id="photoBox"><div id="photoMap"></div><img id="photoImg" alt=""><div id="photoPano"></div><div class="photoTag" id="photoTag">🛰️ Aerial view</div><button id="nextPhoto" class="photoBtn">🔄 Other photo</button><div id="dragHint">↔ Drag to look around</div><a id="svLink" target="_blank" rel="noopener">👀 Street View ↗</a></div>
   <div id="sheetBody"></div></div>
 <div id="toast" class="ui"></div>
 
@@ -466,45 +469,74 @@ async function photoURL(p){
   }catch(e){}
   photoCache[p.img]=url;return url;
 }
-// best Mapillary street photo looking AT the building
-async function streetPhoto(p){
-  if(!MAPILLARY_TOKEN)return null;
+// Mapillary street photos looking AT the building (best first)
+async function streetPhotos(p){
+  if(!MAPILLARY_TOKEN)return [];
   const key='mly:'+p.lat+','+p.lng;if(key in photoCache)return photoCache[key];
-  let best=null;
+  const list=[];
   try{
-    for(const r of [0.0007,0.0018]){ // ~60 m, then ~150 m around the building
+    for(const r of [0.0007,0.0016]){ // ~55 m, then ~125 m around the building
       const bbox=[p.lng-r*1.5,p.lat-r,p.lng+r*1.5,p.lat+r].join(',');
-      const res=await fetch(`https://graph.mapillary.com/images?access_token=${encodeURIComponent(MAPILLARY_TOKEN)}&fields=id,thumb_1024_url,thumb_2048_url,compass_angle,computed_compass_angle,computed_geometry,geometry,captured_at,is_pano&bbox=${bbox}&limit=60`);
+      const res=await fetch(`https://graph.mapillary.com/images?access_token=${encodeURIComponent(MAPILLARY_TOKEN)}&fields=id,thumb_1024_url,thumb_2048_url,compass_angle,computed_compass_angle,computed_geometry,geometry,captured_at,is_pano,camera_type&bbox=${bbox}&limit=100`);
       const j=await res.json();
       for(const im of (j.data||[])){
         const g=(im.computed_geometry||im.geometry);if(!g||!im.thumb_1024_url)continue;
         const at={lat:g.coordinates[1],lng:g.coordinates[0]};
-        const d=dist(at,p);if(d<4||d>120)continue;
-        const want=bearing(at,p),face=im.computed_compass_angle??im.compass_angle;
-        const off=Math.abs(((want-face)%360+540)%360-180);
+        const d=dist(at,p);if(d<5||d>110)continue;
+        const want=bearing(at,p),face=im.computed_compass_angle??im.compass_angle;if(face==null)continue;
+        const signed=((want-face)%360+540)%360-180; // + = building is to the right of centre
+        const pano=!!im.is_pano||im.camera_type==='spherical'||im.camera_type==='equirectangular';
         let score;
-        if(im.is_pano){score=d*1.3+30}            // 360° photo: we can turn it to face the building
-        else{if(off>35)continue;score=off*1.5+d}  // normal photo: must already point at it
-        score-=(im.captured_at||0)/3.15e10*2;     // newer is a bit better
-        // fraction across the 360° image where the building is (image centre = camera heading)
-        const frac=(((want-face)%360+540)%360-180)/360+0.5;
-        if(!best||score<best.score)best={score,url:(im.is_pano&&im.thumb_2048_url)||im.thumb_1024_url,when:im.captured_at,pano:!!im.is_pano,frac,d};
+        if(pano)score=d*1.4+25;
+        else{if(Math.abs(signed)>28)continue;score=Math.abs(signed)*1.6+d}
+        score-=(im.captured_at||0)/3.15e10*2; // newer is a bit better
+        list.push({score,pano,signed,d,when:im.captured_at,url:(pano&&im.thumb_2048_url)||im.thumb_1024_url});
       }
-      if(best)break;
+      if(list.length>=3)break;
     }
   }catch(e){}
-  const out=best?{url:best.url,when:best.when,pano:best.pano,frac:best.frac}:null;
+  list.sort((a,b)=>a.score-b.score);
+  // skip near-duplicates (same spot, same photo run)
+  const out=[];for(const c of list){if(out.length>=6)break;if(!out.some(o=>Math.abs(o.d-c.d)<3&&o.pano===c.pano))out.push(c)}
   photoCache[key]=out;return out;
 }
+let cands=[],candI=0,panoX=0,panoBW=0;
 function showPhoto(on){
-  showingPhoto=on;const pano=$('photoImg').dataset.pano==='1';
-  $('photoImg').style.display=on&&!pano?'block':'none';$('photoPano').style.display=on&&pano?'block':'none';
-  const lbl=$('photoImg').dataset.label||'📷 Photo';
-  $('photoTag').textContent=on?lbl+' · tap for aerial':($('photoImg').dataset.ok?'🛰️ Aerial · tap for photo':'🛰️ Aerial view');
+  showingPhoto=on;const img=$('photoImg'),pano=img.dataset.pano==='1';
+  img.style.display=on&&!pano?'block':'none';$('photoPano').style.display=on&&pano?'block':'none';
+  const lbl=img.dataset.label||'📷 Photo';
+  $('photoTag').textContent=on?lbl+' · tap for aerial':(img.dataset.ok?'🛰️ Aerial · tap for photo':'🛰️ Aerial view');
+  $('nextPhoto').style.display=on&&cands.length>1?'block':'none';
+  $('dragHint').style.display=on&&pano?'block':'none';
 }
 $('photoTag').onclick=()=>{if($('photoImg').dataset.ok)showPhoto(!showingPhoto)};
+$('nextPhoto').onclick=()=>{if(cands.length>1){candI=(candI+1)%cands.length;showCand(S.places[photoFor])}};
+function setPanoPos(){const el=$('photoPano'),H=$('photoBox').clientHeight;el.style.backgroundPosition=`${panoX}px ${-(panoBW/4-H*0.55)}px`}
+// drag a 360° photo left/right to look around
+(()=>{const el=$('photoPano');let sx=null,start=0;
+  el.addEventListener('pointerdown',e=>{sx=e.clientX;start=panoX;el.setPointerCapture(e.pointerId);$('dragHint').style.display='none'});
+  el.addEventListener('pointermove',e=>{if(sx==null)return;panoX=start+(e.clientX-sx);setPanoPos()});
+  const up=()=>{sx=null};el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
+})();
+function showCand(p){
+  const c=cands[candI],img=$('photoImg');if(!c)return;
+  img.onload=()=>{
+    if(photoFor!==p.id||cands[candI]!==c)return;
+    img.dataset.ok=1;img.dataset.label='📷 '+(candI+1)+'/'+cands.length+(c.when?' · '+new Date(c.when).getFullYear():'');
+    if(c.pano){ // ~75° slice of the 360° photo centred on the building
+      img.dataset.pano='1';const W=$('photoBox').clientWidth,el=$('photoPano');
+      panoBW=W*4.8;el.style.backgroundImage=`url("${c.url}")`;el.style.backgroundSize=`${panoBW}px ${panoBW/2}px`;
+      panoX=-((c.signed/360+0.5)*panoBW-W/2);setPanoPos();
+    }else{ // normal photo: slide it so the building is in the middle
+      delete img.dataset.pano;const fov=70;
+      img.style.objectPosition=`${Math.max(0,Math.min(100,50+c.signed/fov*100))}% 55%`;
+    }
+    showPhoto(true)};
+  img.src=c.url;
+}
 function setupPhoto(p){
-  photoFor=p.id;const img=$('photoImg');img.style.display='none';$('photoPano').style.display='none';delete img.dataset.ok;delete img.dataset.label;delete img.dataset.pano;img.removeAttribute('src');showPhoto(false);
+  photoFor=p.id;cands=[];candI=0;const img=$('photoImg');img.style.display='none';$('photoPano').style.display='none';
+  delete img.dataset.ok;delete img.dataset.label;delete img.dataset.pano;img.removeAttribute('src');showPhoto(false);
   $('svLink').href=`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${p.lat},${p.lng}`;
   if(!miniMap){
     miniMap=L.map('photoMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,touchZoom:false,boxZoom:false,keyboard:false,tap:false});
@@ -513,19 +545,13 @@ function setupPhoto(p){
   }
   miniMap.setView([p.lat,p.lng],18,{animate:false});miniPin.setLatLng([p.lat,p.lng]).setIcon(pinIcon(p));
   setTimeout(()=>{miniMap.invalidateSize();miniMap.setView([p.lat,p.lng],18,{animate:false})},300);
-  const use=(url,label,pano)=>{img.onload=()=>{
-      if(photoFor!==p.id)return;img.dataset.ok=1;img.dataset.label=label;
-      if(pano){ // show a ~80° slice of the 360° photo, centred on the building
-        img.dataset.pano='1';const box=$('photoBox'),W=box.clientWidth,H=box.clientHeight,el=$('photoPano');
-        const bw=W*4.5,bh=bw/2; // 360/4.5 = 80° wide
-        el.style.backgroundImage=`url("${url}")`;el.style.backgroundSize=`${bw}px ${bh}px`;
-        el.style.backgroundPosition=`${-(pano.frac*bw-W/2)}px ${-(bh*0.5-H*0.55)}px`;
-      }
-      showPhoto(true)};img.src=url};
-  streetPhoto(p).then(sp=>{
+  photoURL(p).then(url=>{ // a real photo from Wikipedia/OSM goes first
     if(photoFor!==p.id)return;
-    if(sp){use(sp.url,'📷 Mapillary'+(sp.when?' · '+new Date(sp.when).getFullYear():''),sp.pano?sp:null);return}
-    photoURL(p).then(url=>{if(url&&photoFor===p.id)use(url,'📷 Photo')});
+    streetPhotos(p).then(list=>{
+      if(photoFor!==p.id)return;
+      cands=(url?[{url,pano:false,signed:0,when:null}]:[]).concat(list);
+      if(cands.length)showCand(p);
+    });
   });
 }
 
@@ -695,8 +721,9 @@ $('lbBtn').onclick=leaderboard;
 
 
 // ---------- version + what's new ----------
-const VERSION='0.7.1';
+const VERSION='0.7.2';
 const CHANGELOG=[
+  ['0.7.2','Photos that line up',['Better aiming so the building is in the middle of the photo','Drag 360° photos left and right to look around','🔄 Other photo — flip through up to 6 street photos of each building']],
   ['0.7.1','Better building photos',['360° street photos now zoom in on the building instead of showing the whole stretched-out view','Prefers normal photos aimed right at the building']],
   ['0.7.0','Building photos',['Tap a building to see a real street photo of it (from Mapillary) when one exists','Aerial photo of every building, and a 👀 Street View button','Version number and this What\'s New screen']],
   ['0.6.0','Maps upgrade',['🛰️ Satellite view — tap the square in the bottom-left','Blue “YOU” locator dot that points where you’re heading','🧭 Directions to any building, with real walking routes']],
