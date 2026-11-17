@@ -41,6 +41,18 @@
   /* player avatar */
   .me{width:30px;height:30px;border-radius:50%;background:#1a73e8;border:4px solid #fff;box-shadow:0 0 0 0 rgba(26,115,232,.6);animation:pulse 1.6s infinite;display:flex;align-items:center;justify-content:center;font-size:14px}
   @keyframes pulse{to{box-shadow:0 0 0 22px rgba(26,115,232,0)}}
+  .me2{position:relative;width:24px;height:24px}
+  .me2 .cone{position:absolute;left:50%;top:50%;width:90px;height:90px;margin:-45px 0 0 -45px;border-radius:50%;
+    background:conic-gradient(from -28deg,rgba(26,115,232,.75),rgba(26,115,232,.35) 56deg,transparent 56deg);
+    -webkit-mask:radial-gradient(circle,#000 25%,transparent 72%);mask:radial-gradient(circle,#000 25%,transparent 72%);transform:rotate(var(--h,0deg));transition:transform .25s}
+  .me2 .medot{position:absolute;inset:0;border-radius:50%;background:#1a73e8;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);animation:pulse 1.8s infinite}
+  .me2 .tag{position:absolute;top:-24px;left:50%;transform:translateX(-50%);background:#fff;color:#1a73e8;font-size:10px;font-weight:900;padding:2px 7px;border-radius:9px;box-shadow:0 1px 3px rgba(0,0,0,.35);letter-spacing:.5px}
+  #layerBtn{left:12px;bottom:calc(88px + env(safe-area-inset-bottom));width:66px;height:66px;border-radius:12px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);background:#9ab center/cover;padding:0;cursor:pointer;overflow:hidden;display:flex;align-items:flex-end}
+  #layerBtn span{width:100%;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:800;padding:3px 0;text-align:center}
+  .route{background:#e8f0fe;border-radius:12px;padding:10px 12px;margin-top:8px}
+  .route b{font-size:18px;color:#1a73e8}
+  .route a{color:#1a73e8;font-weight:700;font-size:14px}
+  #routeChip{left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom));background:#1a73e8;color:#fff;border-radius:20px;padding:9px 14px;font-weight:800;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.35);display:none;white-space:nowrap;cursor:pointer}
   /* bottom sheet */
   #sheet{left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -2px 12px rgba(0,0,0,.25);padding:10px 18px calc(18px + env(safe-area-inset-bottom));transform:translateY(110%);transition:transform .25s;z-index:1100}
   #sheet.open{transform:none}
@@ -122,10 +134,12 @@
 <div id="fabs" class="ui">
   <button class="fab" id="lbBtn" title="Leaderboard">🏆</button>
   <button class="fab" id="gpsBtn" title="Use real GPS">🛰️</button>
-  <button class="fab" id="locBtn" title="Center on me">📍</button>
+  <button class="fab" id="locBtn" title="Center on me"><svg viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="4" fill="#1a73e8"/><circle cx="12" cy="12" r="7.5" fill="none" stroke="#5f6368" stroke-width="2"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke="#5f6368" stroke-width="2"/></svg></button>
 </div>
 <button id="recruit" class="ui">➕ Recruit 5 crew · 20🪙</button>
 
+<button id="layerBtn" class="ui" title="Change map type"><span>Satellite</span></button>
+<div id="routeChip" class="ui"></div>
 <div id="sheet" class="ui"><div class="grab"></div><div id="sheetBody"></div></div>
 <div id="toast" class="ui"></div>
 
@@ -280,10 +294,19 @@ function newGame(data){
 
 function initMap(){
   map=L.map('map',{zoomControl:false,attributionControl:true}).setView([S.me.lat,S.me.lng],17);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
+  streetLayer=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'});
+  const esri='https://server.arcgisonline.com/ArcGIS/rest/services/';
+  satLayer=L.layerGroup([
+    L.tileLayer(esri+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'}),
+    L.tileLayer(esri+'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,opacity:.8}),
+    L.tileLayer(esri+'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19})
+  ]);
+  let sat=false;try{sat=localStorage.getItem('buckleySat')==='1'}catch(e){}
+  setMapType(sat);
+  $('layerBtn').onclick=()=>setMapType(!satOn);
   rangeCircle=L.circle([S.me.lat,S.me.lng],{radius:RANGE,color:'#1a73e8',weight:2,fillColor:'#1a73e8',fillOpacity:.08}).addTo(map);
-  meMarker=L.marker([S.me.lat,S.me.lng],{icon:L.divIcon({className:'',html:'<div class="me">🧢</div>',iconSize:[30,30],iconAnchor:[15,15]}),zIndexOffset:1000}).addTo(map);
+  meMarker=L.marker([S.me.lat,S.me.lng],{icon:L.divIcon({className:'',html:'<div class="me2"><div class="cone"></div><div class="medot"></div><div class="tag">YOU</div></div>',iconSize:[24,24],iconAnchor:[12,12]}),zIndexOffset:2000,interactive:false}).addTo(map);
   S.places.forEach(p=>{
     markers[p.id]=L.marker([p.lat,p.lng],{icon:pinIcon(p)}).addTo(map).on('click',ev=>{L.DomEvent.stopPropagation(ev);openPlace(p.id)});
   });
@@ -295,6 +318,20 @@ function initMap(){
   map.on('dragstart',()=>follow=false);
 }
 
+let streetLayer,satLayer,satOn=false;
+function tileURL(lat,lng,z,sat){
+  const n=2**z,x=Math.floor((lng+180)/360*n),r=lat*Math.PI/180,y=Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*n);
+  return sat?`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`:`https://tile.openstreetmap.org/${z}/${x}/${y}.png`;
+}
+function setMapType(sat){
+  satOn=sat;
+  if(sat){map.removeLayer(streetLayer);satLayer.addTo(map)}else{map.removeLayer(satLayer);streetLayer.addTo(map)}
+  // button shows the OTHER view, like Google Maps
+  $('layerBtn').style.backgroundImage=`url(${tileURL(CENTER[0],CENTER[1],15,!sat)})`;
+  $('layerBtn').firstElementChild.textContent=sat?'Map':'Satellite';
+  try{localStorage.setItem('buckleySat',sat?'1':'0')}catch(e){}
+}
+
 function pinIcon(p){
   const near=p.owner!==0&&dist(S.me,p)<=RANGE;
   return L.divIcon({className:'',html:`<div class="pin${near?' near':''}" style="--c:${colorOf(p.owner)}"><span>${p.emoji}</span></div>`,iconSize:[38,38],iconAnchor:[19,40]});
@@ -302,17 +339,24 @@ function pinIcon(p){
 function refreshPins(){S.places.forEach(p=>markers[p.id].setIcon(pinIcon(p)))}
 
 // ---------- movement ----------
-function walkTo(ll){walkTarget={lat:ll.lat,lng:ll.lng};follow=true}
+let walkPath=[];
+function walkTo(ll){walkPath=[{lat:ll.lat,lng:ll.lng}];follow=true}
+function bearing(a,b){const t=Math.PI/180,y=Math.sin((b.lng-a.lng)*t)*Math.cos(b.lat*t),x=Math.cos(a.lat*t)*Math.sin(b.lat*t)-Math.sin(a.lat*t)*Math.cos(b.lat*t)*Math.cos((b.lng-a.lng)*t);return Math.atan2(y,x)/t}
+function setHeading(deg){const el=meMarker&&meMarker.getElement();if(el){const c=el.querySelector('.cone');if(c)c.style.setProperty('--h',deg+'deg')}}
 let lastFrame=performance.now(),pinTimer=0;
 function frame(now){
   const dt=Math.min(.1,(now-lastFrame)/1000);lastFrame=now;
-  if(walkTarget&&S.mode!=='gps'){
-    const d=dist(S.me,walkTarget),step=WALK_SPEED*dt;
-    if(d<=step){S.me={...walkTarget};walkTarget=null}
-    else{const f=step/d;S.me={lat:S.me.lat+(walkTarget.lat-S.me.lat)*f,lng:S.me.lng+(walkTarget.lng-S.me.lng)*f}}
+  if(walkPath.length&&S.mode!=='gps'){
+    let step=WALK_SPEED*dt;const start={...S.me};
+    while(step>0&&walkPath.length){
+      const t=walkPath[0],d=dist(S.me,t);
+      if(d<=step){S.me={...t};walkPath.shift();step-=d}
+      else{const f=step/d;S.me={lat:S.me.lat+(t.lat-S.me.lat)*f,lng:S.me.lng+(t.lng-S.me.lng)*f};step=0}
+    }
+    if(dist(start,S.me)>0.5)setHeading(bearing(start,S.me));
     moveMe();
   }
-  pinTimer+=dt;if(pinTimer>.5){pinTimer=0;refreshPins();if(selected!=null)openPlace(selected,true)}
+  pinTimer+=dt;if(pinTimer>.5){pinTimer=0;refreshPins();updateRoute();if(selected!=null)openPlace(selected,true)}
   requestAnimationFrame(frame);
 }
 function moveMe(){
@@ -328,7 +372,9 @@ function toggleGPS(){
     const p={lat:pos.coords.latitude,lng:pos.coords.longitude};
     if(dist(p,{lat:CENTER[0],lng:CENTER[1]})>6000){toast("You're not in Buckley right now — staying in walk mode");stopGPS();return}
     if(S.mode!=='gps'){S.mode='gps';updateHUD();toast('GPS on! Walk around Buckley for real 🛰️')}
-    S.me=p;walkTarget=null;follow=true;moveMe();
+    if(pos.coords.heading!=null&&!isNaN(pos.coords.heading))setHeading(pos.coords.heading);
+    else if(dist(S.me,p)>2)setHeading(bearing(S.me,p));
+    S.me=p;walkPath=[];follow=true;moveMe();
   },()=>{toast('Could not get your location — staying in walk mode');stopGPS()},{enableHighAccuracy:true,maximumAge:2000});
 }
 function stopGPS(){if(gpsWatch!=null)navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;S.mode='walk';updateHUD()}
@@ -348,14 +394,14 @@ function updateHUD(){
 }
 
 // ---------- place sheet ----------
-function openPlace(id,quiet){
+function openPlace(id,quiet,force){
   selected=id;const p=S.places[id],d=dist(S.me,p),inRange=d<=RANGE;
   const ownerName=p.owner==null?'Nobody yet':PLAYERS[p.owner].name;
   let actions='';
   if(p.owner===0){
     actions=`<button class="btn primary" onclick="fortify(${id})" ${S.coins<30?'disabled':''}>🛡️ Fortify +10 defense · 30🪙</button>`;
   }else if(!inRange){
-    actions=`<button class="btn ghost" onclick="goTo(${id})">🚶 Walk closer (${fmtDist(d-RANGE+5)} to go)</button>`;
+    actions=`<div class="sub" style="margin:4px 0 0">Get within ${RANGE} m to capture — ${fmtDist(d-RANGE)} to go</div>`;
   }else{
     const keep=$('sendRange')?$('sendRange').value:null;
     const max=Math.max(1,S.crew),val=Math.min(max,keep?+keep:Math.max(1,Math.min(S.crew,Math.ceil(p.def*1.2))));
@@ -363,7 +409,7 @@ function openPlace(id,quiet){
       <input type="range" id="sendRange" min="1" max="${max}" value="${val}" oninput="$('sendVal').textContent=this.value">
       <button class="btn ${p.owner==null?'primary':'danger'}" onclick="startBattle(${id})" ${S.crew<1?'disabled':''}>${p.owner==null?'🚩 Capture it!':'⚔️ Attack '+PLAYERS[p.owner].name}</button>`;
   }
-  if(quiet&&$('sendRange')&&inRange&&p.owner!==0){ // don't rebuild slider while dragging
+  if(quiet&&!force&&$('sendRange')&&inRange&&p.owner!==0){ // don't rebuild slider while dragging
     return;
   }
   $('sheetBody').innerHTML=`
@@ -373,12 +419,71 @@ function openPlace(id,quiet){
       <div class="stat"><b style="color:${colorOf(p.owner)}">●</b>${ownerName}</div>
       <div class="stat"><b>🛡️ ${Math.round(p.def)}</b>defense</div>
       <div class="stat"><b>🪙 ${p.income}</b>per turn</div>
-    </div>${actions}
+    </div>${p.owner===0||!inRange?routeBox(id):''}${actions}
     <button class="btn ghost" onclick="closeSheet()">Close</button>`;
   $('sheet').classList.add('open');
   if(!quiet){follow=false;map.panTo([p.lat,p.lng])}
 }
-function closeSheet(){$('sheet').classList.remove('open');selected=null}
+// ---------- directions ----------
+let routeLines=null,R=null; // R = {id, path:[{lat,lng}], dist, mins, real, loading}
+async function directions(id){
+  const p=S.places[id];clearRoute(true);
+  R={id,loading:true};openPlace(id,true,true);
+  let path=null,meters=null,secs=null,real=false;
+  try{
+    const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),9000);
+    const r=await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/driving/${S.me.lng},${S.me.lat};${p.lng},${p.lat}?overview=full&geometries=geojson`,{signal:ctl.signal});
+    clearTimeout(tm);const j=await r.json();
+    if(j.routes&&j.routes[0]){path=j.routes[0].geometry.coordinates.map(c=>({lat:c[1],lng:c[0]}));meters=j.routes[0].distance;secs=j.routes[0].duration;real=true}
+  }catch(e){}
+  if(!R||R.id!==id)return; // cancelled
+  if(!path){path=[{...S.me},{lat:p.lat,lng:p.lng}];meters=dist(S.me,p);secs=meters/1.35}
+  path.push({lat:p.lat,lng:p.lng});
+  R={id,path,dist:meters,mins:Math.max(1,Math.round(secs/60)),real};
+  drawRoute();
+  map.fitBounds(L.latLngBounds(path.map(q=>[q.lat,q.lng])).extend([S.me.lat,S.me.lng]),{paddingTopLeft:[40,170],paddingBottomRight:[40,320]});
+  follow=false;openPlace(id,true,true);
+}
+function drawRoute(){
+  if(routeLines)routeLines.forEach(l=>map.removeLayer(l));
+  if(!R||!R.path)return;
+  const pts=[[S.me.lat,S.me.lng],...R.path.map(q=>[q.lat,q.lng])];
+  const dash=R.real?null:'2 12';
+  routeLines=[L.polyline(pts,{color:'#fff',weight:11,opacity:.9,dashArray:dash,interactive:false}).addTo(map),
+              L.polyline(pts,{color:'#1a73e8',weight:7,opacity:1,dashArray:dash,interactive:false}).addTo(map)];
+  meMarker.setZIndexOffset(2000);
+}
+function updateRoute(){
+  if(!R||!R.path)return;
+  // drop route points we've already passed
+  while(R.path.length>1&&(dist(S.me,R.path[0])<15||dist(S.me,R.path[1])<dist(R.path[0],R.path[1])))R.path.shift();
+  const p=S.places[R.id];
+  if(dist(S.me,p)<=RANGE){toast('📍 You made it to '+p.name+'!');clearRoute();if(selected===p.id)openPlace(p.id,true,true);return}
+  drawRoute();
+  let left=dist(S.me,R.path[0]);for(let i=1;i<R.path.length;i++)left+=dist(R.path[i-1],R.path[i]);
+  R.dist=left;R.mins=Math.max(1,Math.round(left/1.35/60));
+  const chip=$('routeChip');
+  if(selected==null){chip.style.display='block';chip.textContent=`🧭 ${p.name} · ${R.mins} min · ${fmtDist(left)}   ✕`}
+  else chip.style.display='none';
+}
+function followRoute(){if(!R||!R.path)return;walkPath=R.path.map(q=>({...q}));follow=true;closeSheet();map.setView([S.me.lat,S.me.lng],18)}
+function clearRoute(quiet){
+  if(routeLines)routeLines.forEach(l=>map.removeLayer(l));routeLines=null;R=null;walkPath=[];
+  $('routeChip').style.display='none';
+}
+$('routeChip').onclick=()=>clearRoute();
+function routeBox(id){
+  if(!R||R.id!==id)return `<button class="btn ghost" onclick="directions(${id})">🧭 Directions</button>`;
+  if(R.loading)return `<div class="route">🧭 Finding the best walking route…</div>`;
+  const p=S.places[id];
+  const g=`https://www.google.com/maps/dir/?api=1&origin=${S.me.lat},${S.me.lng}&destination=${p.lat},${p.lng}&travelmode=walking`;
+  return `<div class="route"><b>🚶 ${R.mins} min</b> &nbsp;${fmtDist(R.dist)} walk${R.real?'':' (straight line — no route found)'}
+    <div style="margin-top:6px"><a href="${g}" target="_blank" rel="noopener">Open in Google Maps ↗</a></div></div>
+    ${S.mode==='gps'?'':`<button class="btn primary" onclick="followRoute()">▶ Walk this route</button>`}
+    <button class="btn ghost" onclick="clearRoute();openPlace(${id},true,true)">✕ Clear route</button>`;
+}
+
+function closeSheet(){$('sheet').classList.remove('open');selected=null;updateRoute()}
 function goTo(id){const p=S.places[id];if(S.mode==='gps'){toast('Walk there for real! It\'s '+fmtDist(dist(S.me,p))+' away');return}walkTo({lat:p.lat,lng:p.lng});closeSheet()}
 function fortify(id){const p=S.places[id];if(S.coins<30)return;S.coins-=30;p.maxDef+=10;p.def+=10;toast('🛡️ '+p.name+' is stronger!');updateHUD();save();openPlace(id,false)}
 
@@ -479,7 +584,7 @@ function pickResult(id){$('results').style.display='none';$('search').value='';$
 
 // ---------- buttons ----------
 $('recruit').onclick=()=>{if(S.coins<20){toast('Need 20🪙 — own more places to earn faster');return}S.coins-=20;S.crew+=5;updateHUD();save();toast('👥 +5 crew!')};
-$('locBtn').onclick=()=>{follow=true;map.setView([S.me.lat,S.me.lng],17)};
+$('locBtn').onclick=()=>{follow=true;map.setView([S.me.lat,S.me.lng],18)};
 $('gpsBtn').onclick=toggleGPS;
 $('lbBtn').onclick=leaderboard;
 
