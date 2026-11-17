@@ -2,27 +2,26 @@
   <defs>
     <linearGradient id="pin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4c8df6"/><stop offset="1" stop-color="#0b3d91"/></linearGradient>
     <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe066"/><stop offset="1" stop-color="#f29900"/></linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb26b"/><stop offset=".55" stop-color="#9ec5ff"/></linearGradient>
     <clipPath id="inner"><circle cx="256" cy="222" r="116"/></clipPath>
   </defs>
   <path d="M256 482 C196 398 100 330 100 222 A156 156 0 1 1 412 222 C412 330 316 398 256 482 Z" fill="url(#pin)" stroke="#fff" stroke-width="14" stroke-linejoin="round"/>
   <circle cx="256" cy="222" r="116" fill="#0a1f4d"/>
   <g clip-path="url(#inner)">
-    <circle cx="300" cy="160" r="20" fill="#fff6c2" opacity=".9"/>
-    <rect x="164" y="232" width="46" height="80" fill="#e8f0fe"/>
-    <rect x="212" y="168" width="58" height="144" fill="#ffffff"/>
-    <rect x="272" y="204" width="42" height="108" fill="#e8f0fe"/>
-    <rect x="316" y="246" width="38" height="66" fill="#d2e3fc"/>
-    <g fill="#fbbc04">
-      <rect x="174" y="246" width="10" height="12"/><rect x="190" y="246" width="10" height="12"/><rect x="174" y="268" width="10" height="12"/>
-      <rect x="224" y="184" width="12" height="14"/><rect x="246" y="184" width="12" height="14"/><rect x="224" y="210" width="12" height="14"/><rect x="246" y="236" width="12" height="14"/><rect x="224" y="262" width="12" height="14"/>
-      <rect x="282" y="220" width="10" height="12"/><rect x="298" y="244" width="10" height="12"/><rect x="282" y="268" width="10" height="12"/>
-      <rect x="326" y="260" width="9" height="11"/>
+    <rect x="130" y="100" width="260" height="240" fill="#6fa8ff"/>
+    <circle cx="256" cy="222" r="116" fill="url(#sky)"/>
+    <path d="M120 290 L200 200 L240 158 L262 136 L284 158 L324 200 L400 290 Z" fill="#7d8fa8"/>
+    <path d="M200 200 L240 158 L262 136 L284 158 L324 200 L304 210 L290 196 L276 214 L262 198 L248 216 L234 200 L218 212 Z" fill="#ffffff"/>
+    <rect x="120" y="270" width="280" height="100" fill="#2e7d32"/>
+    <path d="M232 370 C240 330 268 318 262 284 C258 270 270 262 276 270 C286 300 262 330 276 370 Z" fill="#4fc3f7"/>
+    <g fill="#1b5e20">
+      <path d="M158 300 L176 230 L194 300 Z"/><path d="M182 312 L204 240 L226 312 Z"/><path d="M140 318 L156 262 L172 318 Z"/>
+      <path d="M296 312 L318 238 L340 312 Z"/><path d="M324 300 L342 228 L360 300 Z"/><path d="M348 318 L364 262 L380 318 Z"/>
     </g>
-    <rect x="120" y="306" width="280" height="60" fill="#34a853"/>
-    <rect x="236" y="306" width="10" height="60" fill="#2d8f47"/>
+    <g fill="#5d4037"><rect x="173" y="298" width="6" height="12"/><rect x="201" y="310" width="6" height="12"/><rect x="315" y="310" width="6" height="12"/><rect x="339" y="298" width="6" height="12"/></g>
   </g>
-  <line x1="241" y1="168" x2="241" y2="112" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
-  <path d="M244 112 L290 126 L244 140 Z" fill="#ea4335" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+  <line x1="262" y1="138" x2="262" y2="86" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+  <path d="M265 86 L311 100 L265 114 Z" fill="#ea4335" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
   <path d="M178 82 L166 24 L216 54 L256 8 L296 54 L346 24 L334 82 Z" fill="url(#gold)" stroke="#7a4a00" stroke-width="7" stroke-linejoin="round"/>
   <circle cx="256" cy="8" r="9" fill="#ea4335" stroke="#7a4a00" stroke-width="4"/>
   <circle cx="166" cy="24" r="7" fill="#fff" stroke="#7a4a00" stroke-width="4"/>
