@@ -196,6 +196,7 @@ const RANGE=100;          // meters you must be within
 const WALK_SPEED=45;      // meters per second in walk mode
 const MAX_PLACES=60;
 const SAVE_KEY='buckleyTakeover_v1';
+const MAPILLARY_TOKEN=''; // Mapillary client token (starts with MLY|) — street-level photos
 const PLACES_KEY='buckleyTakeover_places_v2';
 let skipLoading=false,skipCtl=null;
 
@@ -457,13 +458,41 @@ async function photoURL(p){
   }catch(e){}
   photoCache[p.img]=url;return url;
 }
+// best Mapillary street photo looking AT the building
+async function streetPhoto(p){
+  if(!MAPILLARY_TOKEN)return null;
+  const key='mly:'+p.lat+','+p.lng;if(key in photoCache)return photoCache[key];
+  let best=null;
+  try{
+    for(const r of [0.0007,0.0018]){ // ~60 m, then ~150 m around the building
+      const bbox=[p.lng-r*1.5,p.lat-r,p.lng+r*1.5,p.lat+r].join(',');
+      const res=await fetch(`https://graph.mapillary.com/images?access_token=${encodeURIComponent(MAPILLARY_TOKEN)}&fields=id,thumb_1024_url,compass_angle,computed_compass_angle,computed_geometry,geometry,captured_at,is_pano&bbox=${bbox}&limit=60`);
+      const j=await res.json();
+      for(const im of (j.data||[])){
+        const g=(im.computed_geometry||im.geometry);if(!g||!im.thumb_1024_url)continue;
+        const at={lat:g.coordinates[1],lng:g.coordinates[0]};
+        const d=dist(at,p);if(d<4)continue;
+        const want=bearing(at,p),face=im.computed_compass_angle??im.compass_angle;
+        let off=Math.abs(((want-face)%360+540)%360-180);
+        if(im.is_pano)off=Math.min(off,40); // 360° photos can be turned to face it
+        if(off>55)continue;
+        const score=off*1.2+d+(im.is_pano?15:0)-(im.captured_at||0)/3.15e10*2; // facing it, close, newer
+        if(!best||score<best.score)best={score,url:im.thumb_1024_url,when:im.captured_at};
+      }
+      if(best)break;
+    }
+  }catch(e){}
+  const out=best?{url:best.url,when:best.when}:null;
+  photoCache[key]=out;return out;
+}
 function showPhoto(on){
   showingPhoto=on;$('photoImg').style.display=on?'block':'none';
-  $('photoTag').textContent=on?'📷 Photo · tap for aerial':($('photoImg').dataset.ok?'🛰️ Aerial · tap for photo':'🛰️ Aerial view');
+  const lbl=$('photoImg').dataset.label||'📷 Photo';
+  $('photoTag').textContent=on?lbl+' · tap for aerial':($('photoImg').dataset.ok?'🛰️ Aerial · tap for photo':'🛰️ Aerial view');
 }
 $('photoTag').onclick=()=>{if($('photoImg').dataset.ok)showPhoto(!showingPhoto)};
 function setupPhoto(p){
-  photoFor=p.id;const img=$('photoImg');img.style.display='none';delete img.dataset.ok;img.removeAttribute('src');showPhoto(false);
+  photoFor=p.id;const img=$('photoImg');img.style.display='none';delete img.dataset.ok;delete img.dataset.label;img.removeAttribute('src');showPhoto(false);
   $('svLink').href=`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${p.lat},${p.lng}`;
   if(!miniMap){
     miniMap=L.map('photoMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,touchZoom:false,boxZoom:false,keyboard:false,tap:false});
@@ -472,10 +501,11 @@ function setupPhoto(p){
   }
   miniMap.setView([p.lat,p.lng],18,{animate:false});miniPin.setLatLng([p.lat,p.lng]).setIcon(pinIcon(p));
   setTimeout(()=>{miniMap.invalidateSize();miniMap.setView([p.lat,p.lng],18,{animate:false})},300);
-  photoURL(p).then(url=>{
-    if(!url||photoFor!==p.id)return;
-    img.onload=()=>{if(photoFor!==p.id)return;img.dataset.ok=1;showPhoto(true)};
-    img.src=url;
+  const use=(url,label)=>{img.onload=()=>{if(photoFor!==p.id)return;img.dataset.ok=1;img.dataset.label=label;showPhoto(true)};img.src=url};
+  streetPhoto(p).then(sp=>{
+    if(photoFor!==p.id)return;
+    if(sp){use(sp.url,'📷 Mapillary'+(sp.when?' · '+new Date(sp.when).getFullYear():''));return}
+    photoURL(p).then(url=>{if(url&&photoFor===p.id)use(url,'📷 Photo')});
   });
 }
 
