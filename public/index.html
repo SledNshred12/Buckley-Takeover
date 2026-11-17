@@ -56,6 +56,12 @@
   /* bottom sheet */
   #sheet{left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -2px 12px rgba(0,0,0,.25);padding:10px 18px calc(18px + env(safe-area-inset-bottom));transform:translateY(110%);transition:transform .25s;z-index:1100}
   #sheet.open{transform:none}
+  #sheet{max-height:88vh;overflow-y:auto}
+  #photoBox{position:relative;height:170px;border-radius:14px;overflow:hidden;margin-bottom:10px;background:#cfd8dc}
+  #photoMap{position:absolute;inset:0}
+  #photoImg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;z-index:400}
+  .photoTag{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.62);color:#fff;font-size:12px;font-weight:700;padding:5px 9px;border-radius:12px;z-index:500;cursor:pointer;user-select:none}
+  #svLink{position:absolute;right:8px;bottom:8px;background:#fff;color:#1a73e8;font-size:13px;font-weight:800;padding:6px 10px;border-radius:14px;z-index:500;text-decoration:none;box-shadow:0 1px 4px rgba(0,0,0,.3)}
   .grab{width:40px;height:5px;background:#ccc;border-radius:3px;margin:0 auto 10px}
   #sheet h2{margin:0;font-size:20px}
   .sub{color:#5f6368;font-size:14px;margin:4px 0 10px}
@@ -140,7 +146,9 @@
 
 <button id="layerBtn" class="ui" title="Change map type"><span>Satellite</span></button>
 <div id="routeChip" class="ui"></div>
-<div id="sheet" class="ui"><div class="grab"></div><div id="sheetBody"></div></div>
+<div id="sheet" class="ui"><div class="grab"></div>
+  <div id="photoBox"><div id="photoMap"></div><img id="photoImg" alt=""><div class="photoTag" id="photoTag">🛰️ Aerial view</div><a id="svLink" target="_blank" rel="noopener">👀 Street View ↗</a></div>
+  <div id="sheetBody"></div></div>
 <div id="toast" class="ui"></div>
 
 <div id="intro" class="overlay show">
@@ -188,7 +196,7 @@ const RANGE=100;          // meters you must be within
 const WALK_SPEED=45;      // meters per second in walk mode
 const MAX_PLACES=60;
 const SAVE_KEY='buckleyTakeover_v1';
-const PLACES_KEY='buckleyTakeover_places_v1';
+const PLACES_KEY='buckleyTakeover_places_v2';
 let skipLoading=false,skipCtl=null;
 
 const PLAYERS=[
@@ -242,6 +250,12 @@ function classify(t){
   return K('Spot','📍',3,15,4);
 }
 
+function photoTagOf(t){
+  if(t.image&&/^https?:\/\/.+\.(jpe?g|png|webp)(\?.*)?$/i.test(t.image))return t.image;
+  if(t.wikimedia_commons&&t.wikimedia_commons.startsWith('File:'))return t.wikimedia_commons;
+  if(t.wikidata)return 'wd:'+t.wikidata;
+  return null;
+}
 const SKIP=new Set(['parking','parking_space','bench','waste_basket','toilets','bicycle_parking','post_box','vending_machine','atm','charging_station','shelter','drinking_water','recycling','fountain','waste_disposal','parking_entrance','telephone','clock','hunting_stand','grave_yard']);
 
 async function fetchPlaces(){
@@ -262,7 +276,7 @@ async function fetchPlaces(){
       const t=e.tags||{};if(!t.name||SKIP.has(t.amenity))continue;
       const key=t.name.toLowerCase();if(seen.has(key))continue;seen.add(key);
       const lat=e.lat??e.center?.lat,lng=e.lon??e.center?.lon;if(lat==null)continue;
-      out.push({name:t.name,lat,lng,...classify(t)});
+      out.push({name:t.name,lat,lng,img:photoTagOf(t),...classify(t)});
     }
     if(out.length<5)throw new Error('too few');
     return out;
@@ -284,7 +298,7 @@ async function fetchPlaces(){
 
 // ---------- game setup ----------
 function newGame(data){
-  const places=data.list.map((p,i)=>({id:i,name:p.name,lat:p.lat,lng:p.lng,kind:p.kind,emoji:p.emoji,income:p.income,maxDef:p.def,def:p.def,owner:null}));
+  const places=data.list.map((p,i)=>({id:i,name:p.name,img:p.img||null,lat:p.lat,lng:p.lng,kind:p.kind,emoji:p.emoji,income:p.income,maxDef:p.def,def:p.def,owner:null}));
   S={real:data.real,coins:60,crew:20,me:{lat:CENTER[0],lng:CENTER[1]},places,
      rivals:[null,{crew:20,coins:0},{crew:20,coins:0},{crew:20,coins:0}],time:0,over:false};
   // each rival starts with one place far from the middle
@@ -396,6 +410,7 @@ function updateHUD(){
 // ---------- place sheet ----------
 function openPlace(id,quiet,force){
   selected=id;const p=S.places[id],d=dist(S.me,p),inRange=d<=RANGE;
+  if(photoFor!==id||!$('sheet').classList.contains('open'))setupPhoto(p);
   const ownerName=p.owner==null?'Nobody yet':PLAYERS[p.owner].name;
   let actions='';
   if(p.owner===0){
@@ -424,6 +439,46 @@ function openPlace(id,quiet,force){
   $('sheet').classList.add('open');
   if(!quiet){follow=false;map.panTo([p.lat,p.lng])}
 }
+// ---------- building pictures ----------
+let miniMap=null,miniPin=null,photoFor=null,showingPhoto=false;
+const photoCache={};
+async function photoURL(p){
+  if(!p.img)return null;
+  if(p.img in photoCache)return photoCache[p.img];
+  let url=null;
+  try{
+    if(p.img.startsWith('http'))url=p.img;
+    else if(p.img.startsWith('File:'))url='https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(p.img.slice(5))+'?width=640';
+    else if(p.img.startsWith('wd:')){
+      const r=await fetch('https://www.wikidata.org/w/api.php?action=wbgetclaims&property=P18&format=json&origin=*&entity='+p.img.slice(3));
+      const j=await r.json();const f=j.claims&&j.claims.P18&&j.claims.P18[0].mainsnak.datavalue.value;
+      if(f)url='https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(f)+'?width=640';
+    }
+  }catch(e){}
+  photoCache[p.img]=url;return url;
+}
+function showPhoto(on){
+  showingPhoto=on;$('photoImg').style.display=on?'block':'none';
+  $('photoTag').textContent=on?'📷 Photo · tap for aerial':($('photoImg').dataset.ok?'🛰️ Aerial · tap for photo':'🛰️ Aerial view');
+}
+$('photoTag').onclick=()=>{if($('photoImg').dataset.ok)showPhoto(!showingPhoto)};
+function setupPhoto(p){
+  photoFor=p.id;const img=$('photoImg');img.style.display='none';delete img.dataset.ok;img.removeAttribute('src');showPhoto(false);
+  $('svLink').href=`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${p.lat},${p.lng}`;
+  if(!miniMap){
+    miniMap=L.map('photoMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,touchZoom:false,boxZoom:false,keyboard:false,tap:false});
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,maxNativeZoom:19}).addTo(miniMap);
+    miniPin=L.marker([p.lat,p.lng],{icon:pinIcon(p),interactive:false}).addTo(miniMap);
+  }
+  miniMap.setView([p.lat,p.lng],18,{animate:false});miniPin.setLatLng([p.lat,p.lng]).setIcon(pinIcon(p));
+  setTimeout(()=>{miniMap.invalidateSize();miniMap.setView([p.lat,p.lng],18,{animate:false})},300);
+  photoURL(p).then(url=>{
+    if(!url||photoFor!==p.id)return;
+    img.onload=()=>{if(photoFor!==p.id)return;img.dataset.ok=1;showPhoto(true)};
+    img.src=url;
+  });
+}
+
 // ---------- directions ----------
 let routeLines=null,R=null; // R = {id, path:[{lat,lng}], dist, mins, real, loading}
 async function directions(id){
@@ -483,7 +538,7 @@ function routeBox(id){
     <button class="btn ghost" onclick="clearRoute();openPlace(${id},true,true)">✕ Clear route</button>`;
 }
 
-function closeSheet(){$('sheet').classList.remove('open');selected=null;updateRoute()}
+function closeSheet(){$('sheet').classList.remove('open');selected=null;photoFor=null;updateRoute()}
 function goTo(id){const p=S.places[id];if(S.mode==='gps'){toast('Walk there for real! It\'s '+fmtDist(dist(S.me,p))+' away');return}walkTo({lat:p.lat,lng:p.lng});closeSheet()}
 function fortify(id){const p=S.places[id];if(S.coins<30)return;S.coins-=30;p.maxDef+=10;p.def+=10;toast('🛡️ '+p.name+' is stronger!');updateHUD();save();openPlace(id,false)}
 
