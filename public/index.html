@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Buckley Takeover</title>
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0b1736">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -64,6 +68,38 @@
   #toast.show{opacity:.95}
   .lb{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eee;font-size:16px}
   .lb b{margin-left:auto}
+
+  /* ---------- loading screen ---------- */
+  #intro{background:radial-gradient(circle at 50% 35%,#1b3a7a 0%,#0b1736 60%,#060d22 100%);overflow:hidden;padding:20px}
+  #intro::before{content:"";position:absolute;inset:-50%;background:
+     repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 2px,transparent 2px 60px),
+     repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 2px,transparent 2px 60px);
+     transform:perspective(500px) rotateX(55deg);animation:grid 6s linear infinite}
+  @keyframes grid{to{background-position:0 60px,0 0}}
+  #axiom{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#05070f;z-index:5;transition:opacity .6s}
+  #axiom svg{width:96px;animation:spinIn 1.2s cubic-bezier(.2,1.4,.4,1) both}
+  #axiom .an{font-family:Bungee,sans-serif;letter-spacing:8px;font-size:22px;margin-top:16px;animation:fadeUp .8s .5s both}
+  #axiom .pr{opacity:.6;letter-spacing:4px;font-size:12px;margin-top:6px;animation:fadeUp .8s .9s both}
+  @keyframes spinIn{from{transform:rotate(-180deg) scale(0);opacity:0}}
+  @keyframes fadeUp{from{transform:translateY(10px);opacity:0}}
+  #splash{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;width:100%;max-width:440px}
+  #logo{width:min(46vw,190px);filter:drop-shadow(0 10px 18px rgba(0,0,0,.5));animation:drop 1s cubic-bezier(.2,1.5,.4,1) both,float 3s 1s ease-in-out infinite alternate}
+  @keyframes drop{from{transform:translateY(-120vh)}}
+  @keyframes float{to{transform:translateY(-8px)}}
+  #wordmark{font-family:Bungee,Impact,sans-serif;font-size:min(13vw,56px);line-height:1;margin-top:6px;color:#fff;text-shadow:0 4px 0 #0b3d91,0 8px 16px rgba(0,0,0,.5);animation:fadeUp .6s .6s both}
+  #ribbon{font-family:Bungee,Impact,sans-serif;font-size:min(7vw,28px);background:#ea4335;color:#fff;padding:4px 22px;margin-top:4px;transform:rotate(-3deg);box-shadow:0 4px 0 #8c1d18;clip-path:polygon(0 0,100% 0,96% 50%,100% 100%,0 100%,4% 50%);animation:fadeUp .6s .8s both}
+  #loadBar{width:80%;height:14px;background:rgba(255,255,255,.15);border-radius:7px;margin-top:28px;overflow:hidden;border:2px solid rgba(255,255,255,.25)}
+  #loadBar div{height:100%;width:0;background:linear-gradient(90deg,#fbbc04,#f29900);border-radius:5px;transition:width .3s}
+  #loadTxt{font-size:14px;opacity:.85;margin-top:10px;min-height:20px}
+  #tip{font-size:13px;opacity:.65;margin-top:6px;min-height:36px;padding:0 10px;transition:opacity .4s}
+  #menu{width:100%;display:none;flex-direction:column;align-items:center;animation:fadeUp .4s both}
+  #menu .btn{max-width:320px}
+  #playBtn{background:#fbbc04;color:#202124;font-family:Bungee,sans-serif;font-size:22px;box-shadow:0 5px 0 #b06000;margin-top:22px}
+  #playBtn:active{transform:translateY(3px);box-shadow:0 2px 0 #b06000}
+  #newBtn{background:rgba(255,255,255,.15);color:#fff}
+  #how{margin-top:14px;max-width:340px;text-align:left;font-size:14px;background:rgba(255,255,255,.08);border-radius:14px;padding:10px 14px}
+  #how summary{cursor:pointer;font-weight:700;text-align:center;list-style:none}
+  #how ul{padding-left:18px;line-height:1.5;margin:8px 0 0}
 </style>
 </head>
 <body>
@@ -91,18 +127,30 @@
 <div id="sheet" class="ui"><div class="grab"></div><div id="sheetBody"></div></div>
 <div id="toast" class="ui"></div>
 
-<div id="intro" class="overlay show"><div class="card">
-  <h1>🏙️ BUCKLEY TAKEOVER</h1>
-  <p style="text-align:center;color:#5f6368;margin-top:0" id="loadTxt">Scouting Buckley for real places…</p>
-  <ul>
-    <li><b>Walk</b> to real places on the map. Tap the map to walk there, or turn on 🛰️ to use your real GPS.</li>
-    <li>When you're close (inside your blue circle), tap a place to <b>capture</b> or <b>attack</b> it.</li>
-    <li>Every place you own earns 🪙 coins. Spend them on crew and defenses.</li>
-    <li>Three rival crews are trying to take over too. Whoever owns <b>all of Buckley</b> wins!</li>
-  </ul>
-  <button class="btn primary" id="playBtn" disabled>Loading…</button>
-  <button class="btn ghost" id="newBtn" style="display:none">Start a new game</button>
-</div></div>
+<div id="intro" class="overlay show">
+  <div id="axiom">
+    <svg viewBox="0 0 100 100"><path d="M50 6 L90 28 L50 50 L10 28 Z" fill="#7fb3ff"/><path d="M10 28 L50 50 L50 94 L10 72 Z" fill="#3d7be0"/><path d="M90 28 L50 50 L50 94 L90 72 Z" fill="#1d4fa8"/><path d="M50 50 L70 39 L70 61 L50 72 Z" fill="#05070f"/></svg>
+    <div class="an">AXIOM GAMES</div><div class="pr">PRESENTS</div>
+  </div>
+  <div id="splash">
+    <img id="logo" src="logo.svg" alt="Buckley Takeover logo">
+    <div id="wordmark">BUCKLEY</div>
+    <div id="ribbon">TAKEOVER</div>
+    <div id="loadBar"><div></div></div>
+    <div id="loadTxt">Scouting Buckley for real places…</div>
+    <div id="tip"></div>
+    <div id="menu">
+      <button class="btn" id="playBtn" disabled>Loading…</button>
+      <button class="btn" id="newBtn" style="display:none">Start a new game</button>
+      <details id="how"><summary>❓ How to play</summary><ul>
+        <li><b>Walk</b> to real places. Tap the map to walk there, or turn on 🛰️ to use real GPS.</li>
+        <li>When a place is inside your blue circle, tap it to <b>capture</b> or <b>attack</b>.</li>
+        <li>Places you own earn 🪙 coins. Spend them on crew and defenses.</li>
+        <li>Three rival crews want Buckley too. Own <b>every place</b> to win!</li>
+      </ul></details>
+    </div>
+  </div>
+</div>
 
 <div id="battle" class="overlay">
   <div style="font-size:18px;font-weight:700" id="bTitle">Attacking…</div>
@@ -429,28 +477,43 @@ $('locBtn').onclick=()=>{follow=true;map.setView([S.me.lat,S.me.lng],17)};
 $('gpsBtn').onclick=toggleGPS;
 $('lbBtn').onclick=leaderboard;
 
+
+// ---------- loading screen ----------
+const TIPS=['Tip: Schools and city buildings pay the most coins.','Tip: Tap the red button FAST in battles for extra power.','Tip: A failed attack still weakens the defense — try again!','Tip: Fortify your best places so rivals bounce off.','Tip: Glowing pins are close enough to capture.','Tip: Turn on 🛰️ to play with your real location.'];
+let tipI=Math.floor(Math.random()*TIPS.length),loadPct=0,loadDone=false;
+function showTip(){const t=$('tip');t.style.opacity=0;setTimeout(()=>{t.textContent=TIPS[tipI++%TIPS.length];t.style.opacity=.65},400)}
+showTip();const tipTimer=setInterval(showTip,3200);
+const loadTimer=setInterval(()=>{if(loadDone)return;loadPct+=(90-loadPct)*.04;$('loadBar').firstElementChild.style.width=loadPct+'%'},120);
+setTimeout(()=>{$('axiom').style.opacity=0;setTimeout(()=>$('axiom').remove(),600)},2200);
+function finishLoading(){
+  loadDone=true;clearInterval(loadTimer);$('loadBar').firstElementChild.style.width='100%';
+  setTimeout(()=>{$('loadBar').style.display='none';$('menu').style.display='flex'},400);
+}
+
 // ---------- start ----------
 let saved=null;try{saved=JSON.parse(localStorage.getItem(SAVE_KEY))}catch(e){}
 function begin(){
-  $('intro').classList.remove('show');S.mode='walk';
+  $('intro').classList.remove('show');clearInterval(tipTimer);S.mode='walk';
   initMap();updateHUD();requestAnimationFrame(frame);setInterval(tick,5000);
   toast('Tap the map to walk. Glowing pins are close enough to capture!');
 }
 if(saved&&saved.places&&!saved.over){
   $('loadTxt').textContent='Your takeover is saved — welcome back!';
-  $('playBtn').disabled=false;$('playBtn').textContent='▶ Continue';
+  $('playBtn').disabled=false;$('playBtn').textContent='▶ CONTINUE';
   $('newBtn').style.display='block';
   $('playBtn').onclick=()=>{S=saved;begin()};
+  setTimeout(finishLoading,2600);
   $('newBtn').onclick=restart;
 }else{
-  setTimeout(()=>{if($('playBtn').disabled){const b=$('newBtn');b.style.display='block';b.textContent='Skip — play the practice map now';
+  setTimeout(()=>{if($('playBtn').disabled){$('menu').style.display='flex';const b=$('newBtn');b.style.display='block';b.textContent='Skip — play the practice map now';
     b.onclick=()=>{skipLoading=true;if(skipCtl)skipCtl.abort()}}},6000);
   fetchPlaces().then(data=>{
     $('newBtn').style.display='none';
     newGame(data);
     $('loadTxt').textContent=data.real?`Found ${data.list.length} real places in Buckley!`:'Could not load real places (no internet?) — using a practice map.';
-    $('playBtn').disabled=false;$('playBtn').textContent='▶ Play';
+    $('playBtn').disabled=false;$('playBtn').textContent='▶ PLAY';
     $('playBtn').onclick=begin;
+    setTimeout(finishLoading,Math.max(0,2600-performance.now()));
   });
 }
 </script>
