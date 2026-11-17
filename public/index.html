@@ -366,7 +366,32 @@ function refreshPins(){S.places.forEach(p=>markers[p.id].setIcon(pinIcon(p)))}
 
 // ---------- movement ----------
 let walkPath=[];
-function walkTo(ll){walkPath=[{lat:ll.lat,lng:ll.lng}];follow=true}
+// walking follows real streets/paths (OpenStreetMap foot routing); straight line only if that fails
+let walkReq=0,walkLine=null,walkGoal=null;
+async function footRoute(a,b,ms){
+  try{
+    const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),ms||6000);
+    const r=await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`,{signal:ctl.signal});
+    clearTimeout(tm);const j=await r.json();
+    if(j.routes&&j.routes[0])return{path:j.routes[0].geometry.coordinates.map(c=>({lat:c[1],lng:c[0]})),meters:j.routes[0].distance,secs:j.routes[0].duration};
+  }catch(e){}
+  return null;
+}
+async function walkTo(ll){
+  const id=++walkReq,goal={lat:ll.lat,lng:ll.lng};follow=true;walkPath=[];
+  if(walkGoal)map.removeLayer(walkGoal);
+  walkGoal=L.circleMarker([goal.lat,goal.lng],{radius:7,color:'#fff',weight:3,fillColor:'#1a73e8',fillOpacity:1,interactive:false}).addTo(map);
+  const r=await footRoute(S.me,goal);
+  if(id!==walkReq||S.mode==='gps')return;
+  walkPath=r?[...r.path,goal]:[goal];
+  drawWalkLine();
+}
+function drawWalkLine(){
+  if(walkLine){map.removeLayer(walkLine);walkLine=null}
+  if(!walkPath.length){if(walkGoal){map.removeLayer(walkGoal);walkGoal=null}return}
+  if(R&&R.path)return; // the Directions route is already drawn
+  walkLine=L.polyline([[S.me.lat,S.me.lng],...walkPath.map(q=>[q.lat,q.lng])],{color:'#1a73e8',weight:5,opacity:.55,dashArray:'1 9',lineCap:'round',interactive:false}).addTo(map);
+}
 function bearing(a,b){const t=Math.PI/180,y=Math.sin((b.lng-a.lng)*t)*Math.cos(b.lat*t),x=Math.cos(a.lat*t)*Math.sin(b.lat*t)-Math.sin(a.lat*t)*Math.cos(b.lat*t)*Math.cos((b.lng-a.lng)*t);return Math.atan2(y,x)/t}
 function setHeading(deg){const el=meMarker&&meMarker.getElement();if(el){const c=el.querySelector('.cone');if(c)c.style.setProperty('--h',deg+'deg')}}
 let lastFrame=performance.now(),pinTimer=0;
@@ -382,7 +407,7 @@ function frame(now){
     if(dist(start,S.me)>0.5)setHeading(bearing(start,S.me));
     moveMe();
   }
-  pinTimer+=dt;if(pinTimer>.5){pinTimer=0;refreshPins();updateRoute();if(selected!=null)openPlace(selected,true)}
+  pinTimer+=dt;if(pinTimer>.5){pinTimer=0;refreshPins();updateRoute();drawWalkLine();if(selected!=null)openPlace(selected,true)}
   requestAnimationFrame(frame);
 }
 function moveMe(){
@@ -597,7 +622,7 @@ function updateRoute(){
   if(selected==null){chip.style.display='block';chip.textContent=`🧭 ${p.name} · ${R.mins} min · ${fmtDist(left)}   ✕`}
   else chip.style.display='none';
 }
-function followRoute(){if(!R||!R.path)return;walkPath=R.path.map(q=>({...q}));follow=true;closeSheet();map.setView([S.me.lat,S.me.lng],18)}
+function followRoute(){if(!R||!R.path)return;walkReq++;walkPath=R.path.map(q=>({...q}));follow=true;closeSheet();map.setView([S.me.lat,S.me.lng],18)}
 function clearRoute(quiet){
   if(routeLines)routeLines.forEach(l=>map.removeLayer(l));routeLines=null;R=null;walkPath=[];
   $('routeChip').style.display='none';
@@ -721,8 +746,9 @@ $('lbBtn').onclick=leaderboard;
 
 
 // ---------- version + what's new ----------
-const VERSION='0.7.2';
+const VERSION='0.8.0';
 const CHANGELOG=[
+  ['0.8.0','Walk on the streets',['Tap the map and you walk along real streets and paths instead of cutting straight through town','A dotted line shows the way you’re walking']],
   ['0.7.2','Photos that line up',['Better aiming so the building is in the middle of the photo','Drag 360° photos left and right to look around','🔄 Other photo — flip through up to 6 street photos of each building']],
   ['0.7.1','Better building photos',['360° street photos now zoom in on the building instead of showing the whole stretched-out view','Prefers normal photos aimed right at the building']],
   ['0.7.0','Building photos',['Tap a building to see a real street photo of it (from Mapillary) when one exists','Aerial photo of every building, and a 👀 Street View button','Version number and this What\'s New screen']],
