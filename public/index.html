@@ -76,13 +76,13 @@
      repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 2px,transparent 2px 60px);
      transform:perspective(500px) rotateX(55deg);animation:grid 6s linear infinite}
   @keyframes grid{to{background-position:0 60px,0 0}}
-  #axiom{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#0b0d1a;z-index:5;transition:opacity .6s;cursor:pointer}
+  #axiom{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#0b0e19;z-index:5;transition:opacity .6s;cursor:pointer}
   #tapStart{display:flex;flex-direction:column;align-items:center}
   #tapStart svg{width:64px;animation:float 1.6s ease-in-out infinite alternate}
   #tapStart .an{font-weight:800;letter-spacing:2px;font-size:16px;margin-top:18px;color:#4a4f7a;animation:blink 1.4s ease-in-out infinite alternate}
   #tapStart .pr{font-size:12px;margin-top:6px;color:#3a3e66}
   @keyframes blink{to{color:#8b90d6}}
-  #axiomVid{display:none;width:min(100vw,100vh);height:min(100vw,100vh);object-fit:contain;background:#0b0d1a}
+  #axiomVid{display:none;width:min(100vw,100vh);height:min(100vw,100vh);object-fit:contain;background:#0b0e19}
   @keyframes fadeUp{from{transform:translateY(10px);opacity:0}}
   #splash{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;width:100%;max-width:440px}
   #logo{width:min(46vw,190px);filter:drop-shadow(0 10px 18px rgba(0,0,0,.5));animation:drop 1s cubic-bezier(.2,1.5,.4,1) both,float 3s 1s ease-in-out infinite alternate}
@@ -132,7 +132,7 @@
 <div id="intro" class="overlay show">
   <div id="axiom">
     <div id="tapStart">
-      <svg viewBox="0 0 100 100"><path d="M50 8 L88 29 L50 50 L12 29 Z" fill="#a9afff"/><path d="M12 29 L50 50 L50 94 L12 73 Z" fill="#5a62ee"/><path d="M88 29 L50 50 L50 94 L88 73 Z" fill="#3c40b4"/><path d="M50 19 L67 29 L50 39 L33 29 Z" fill="#0b0d1a"/></svg>
+      <svg viewBox="0 0 100 100"><path d="M50 8 L88 29 L50 50 L12 29 Z" fill="#a9afff"/><path d="M12 29 L50 50 L50 94 L12 73 Z" fill="#5a62ee"/><path d="M88 29 L50 50 L50 94 L88 73 Z" fill="#3c40b4"/><path d="M50 19 L67 29 L50 39 L33 29 Z" fill="#0b0e19"/></svg>
       <div class="an">TAP TO START</div><div class="pr">Sound on for the full experience</div>
     </div>
     <video id="axiomVid" src="axiom-intro.mp4" playsinline webkit-playsinline preload="auto"></video>
