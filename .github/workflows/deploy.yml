@@ -1,0 +1,36 @@
+name: Deploy game
+
+# Publishes the public/ folder to Cloudflare Pages (project "buckley-takeover")
+# whenever the game changes on main. Can also be run by hand from the Actions tab.
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'public/**', '.github/workflows/deploy.yml' ]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create the Pages project (first run only)
+        uses: cloudflare/wrangler-action@v3
+        continue-on-error: true
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create buckley-takeover --production-branch=main
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy public --project-name=buckley-takeover --branch=main --commit-dirty=true
