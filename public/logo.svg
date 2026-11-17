@@ -1,29 +1,58 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="pin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4c8df6"/><stop offset="1" stop-color="#0b3d91"/></linearGradient>
-    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe066"/><stop offset="1" stop-color="#f29900"/></linearGradient>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb26b"/><stop offset=".55" stop-color="#9ec5ff"/></linearGradient>
-    <clipPath id="inner"><circle cx="256" cy="222" r="116"/></clipPath>
+    <linearGradient id="pin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5b9bff"/><stop offset=".5" stop-color="#1a5fd0"/><stop offset="1" stop-color="#082e75"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".35" stop-color="#ffd23f"/><stop offset=".7" stop-color="#e09a00"/><stop offset="1" stop-color="#a86a00"/></linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b6fc4"/><stop offset=".45" stop-color="#9cc3f0"/><stop offset=".75" stop-color="#f6d6b0"/><stop offset="1" stop-color="#f3b68a"/></linearGradient>
+    <linearGradient id="rockL" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8d9bb3"/><stop offset="1" stop-color="#b9c4d6"/></linearGradient>
+    <linearGradient id="rockR" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5d6b85"/><stop offset="1" stop-color="#3f4b63"/></linearGradient>
+    <linearGradient id="snowR" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dfe8f5"/><stop offset="1" stop-color="#aebdd6"/></linearGradient>
+    <linearGradient id="hill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f8a4a"/><stop offset="1" stop-color="#2b5a2b"/></linearGradient>
+    <linearGradient id="far" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5f8fa0"/><stop offset="1" stop-color="#3f6f70"/></linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe9ff"/><stop offset="1" stop-color="#2f8fd6"/></linearGradient>
+    <linearGradient id="tree" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2f6b35"/><stop offset=".5" stop-color="#1d4a24"/><stop offset="1" stop-color="#123318"/></linearGradient>
+    <radialGradient id="haze" cx=".5" cy=".75" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="vign" cx=".5" cy=".45" r=".55"><stop offset=".75" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient>
+    <clipPath id="inner"><circle cx="256" cy="222" r="118"/></clipPath>
+    <symbol id="fir" viewBox="0 0 40 100"><rect x="18" y="86" width="4" height="14" fill="#3e2a1a"/><path d="M20 0 L28 22 L24 22 L33 44 L27 44 L37 68 L30 68 L40 90 L0 90 L10 68 L3 68 L13 44 L7 44 L16 22 L12 22 Z" fill="url(#tree)"/></symbol>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000" flood-opacity=".45"/></filter>
   </defs>
-  <path d="M256 482 C196 398 100 330 100 222 A156 156 0 1 1 412 222 C412 330 316 398 256 482 Z" fill="url(#pin)" stroke="#fff" stroke-width="14" stroke-linejoin="round"/>
-  <circle cx="256" cy="222" r="116" fill="#0a1f4d"/>
-  <g clip-path="url(#inner)">
-    <rect x="130" y="100" width="260" height="240" fill="#6fa8ff"/>
-    <circle cx="256" cy="222" r="116" fill="url(#sky)"/>
-    <path d="M120 290 L200 200 L240 158 L262 136 L284 158 L324 200 L400 290 Z" fill="#7d8fa8"/>
-    <path d="M200 200 L240 158 L262 136 L284 158 L324 200 L304 210 L290 196 L276 214 L262 198 L248 216 L234 200 L218 212 Z" fill="#ffffff"/>
-    <rect x="120" y="270" width="280" height="100" fill="#2e7d32"/>
-    <path d="M232 370 C240 330 268 318 262 284 C258 270 270 262 276 270 C286 300 262 330 276 370 Z" fill="#4fc3f7"/>
-    <g fill="#1b5e20">
-      <path d="M158 300 L176 230 L194 300 Z"/><path d="M182 312 L204 240 L226 312 Z"/><path d="M140 318 L156 262 L172 318 Z"/>
-      <path d="M296 312 L318 238 L340 312 Z"/><path d="M324 300 L342 228 L360 300 Z"/><path d="M348 318 L364 262 L380 318 Z"/>
-    </g>
-    <g fill="#5d4037"><rect x="173" y="298" width="6" height="12"/><rect x="201" y="310" width="6" height="12"/><rect x="315" y="310" width="6" height="12"/><rect x="339" y="298" width="6" height="12"/></g>
+  <g filter="url(#shadow)">
+    <path d="M256 486 C196 400 98 332 98 222 A158 158 0 1 1 414 222 C414 332 316 400 256 486 Z" fill="url(#pin)" stroke="#fff" stroke-width="14" stroke-linejoin="round"/>
   </g>
-  <line x1="262" y1="138" x2="262" y2="86" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
-  <path d="M265 86 L311 100 L265 114 Z" fill="#ea4335" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
-  <path d="M178 82 L166 24 L216 54 L256 8 L296 54 L346 24 L334 82 Z" fill="url(#gold)" stroke="#7a4a00" stroke-width="7" stroke-linejoin="round"/>
-  <circle cx="256" cy="8" r="9" fill="#ea4335" stroke="#7a4a00" stroke-width="4"/>
-  <circle cx="166" cy="24" r="7" fill="#fff" stroke="#7a4a00" stroke-width="4"/>
-  <circle cx="346" cy="24" r="7" fill="#fff" stroke="#7a4a00" stroke-width="4"/>
+  <path d="M140 150 A140 140 0 0 1 330 90" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="10" stroke-linecap="round"/>
+  <g clip-path="url(#inner)">
+    <rect x="130" y="100" width="260" height="250" fill="url(#sky)"/>
+    <g fill="#fff" opacity=".75"><ellipse cx="180" cy="140" rx="30" ry="7"/><ellipse cx="205" cy="134" rx="20" ry="6"/><ellipse cx="335" cy="150" rx="26" ry="6"/></g>
+    <!-- mountain -->
+    <path d="M118 286 L196 214 L232 172 L252 150 L262 144 L274 154 L296 178 L330 214 L404 286 Z" fill="url(#rockL)"/>
+    <path d="M262 144 L274 154 L296 178 L330 214 L404 286 L268 286 L276 240 L262 200 Z" fill="url(#rockR)"/>
+    <path d="M196 214 L232 172 L252 150 L262 144 L274 154 L296 178 L318 202 L306 206 L298 196 L286 212 L276 200 L266 222 L258 204 L246 220 L236 206 L224 222 L214 210 Z" fill="#fbfdff"/>
+    <path d="M262 144 L274 154 L296 178 L318 202 L306 206 L298 196 L286 212 L276 200 L266 222 L262 200 Z" fill="url(#snowR)"/>
+    <path d="M244 172 L236 196 M282 172 L292 192 M256 160 L252 182" stroke="#9fb0c8" stroke-width="2" fill="none"/>
+    <rect x="120" y="230" width="280" height="70" fill="url(#haze)"/>
+    <!-- far ridge + hills -->
+    <path d="M118 270 C150 252 180 262 206 254 C236 246 262 262 296 252 C330 244 370 258 404 250 L404 300 L118 300 Z" fill="url(#far)"/>
+    <path d="M118 290 C160 276 210 286 256 280 C300 274 350 284 404 278 L404 360 L118 360 Z" fill="url(#hill)"/>
+    <!-- river -->
+    <path d="M250 282 C246 300 230 312 232 336 L222 360 L292 360 C284 336 268 318 270 300 C271 292 266 284 258 281 Z" fill="url(#water)"/>
+    <path d="M254 296 C250 308 244 318 246 332 M262 300 C262 314 270 326 272 340" stroke="#fff" stroke-opacity=".6" stroke-width="2" fill="none"/>
+    <!-- forests: back to front -->
+    <use href="#fir" x="140" y="236" width="24" height="60" opacity=".7"/><use href="#fir" x="300" y="234" width="24" height="60" opacity=".7"/><use href="#fir" x="352" y="238" width="22" height="56" opacity=".7"/>
+    <use href="#fir" x="128" y="236" width="36" height="90"/><use href="#fir" x="158" y="222" width="40" height="100"/><use href="#fir" x="190" y="248" width="30" height="76"/>
+    <use href="#fir" x="300" y="246" width="32" height="80"/><use href="#fir" x="326" y="220" width="42" height="104"/><use href="#fir" x="362" y="240" width="34" height="86"/>
+    <circle cx="256" cy="222" r="118" fill="url(#vign)"/>
+  </g>
+  <circle cx="256" cy="222" r="118" fill="none" stroke="#0a2a66" stroke-width="5"/>
+  <!-- flag on the summit -->
+  <line x1="263" y1="146" x2="263" y2="104" stroke="#e8e8e8" stroke-width="5" stroke-linecap="round"/>
+  <path d="M266 106 C276 103 284 111 298 108 C292 114 292 120 298 126 C284 129 276 121 266 124 Z" fill="#e53935" stroke="#8c1d18" stroke-width="2"/>
+  <!-- crown -->
+  <g filter="url(#shadow)">
+    <path d="M176 84 L162 26 L214 56 L256 8 L298 56 L350 26 L336 84 Z" fill="url(#gold)" stroke="#6b4300" stroke-width="6" stroke-linejoin="round"/>
+    <rect x="174" y="72" width="164" height="16" rx="4" fill="url(#gold)" stroke="#6b4300" stroke-width="5"/>
+    <path d="M196 40 L212 60 M300 60 L316 40" stroke="#fff8d0" stroke-width="3" opacity=".7"/>
+    <circle cx="256" cy="10" r="10" fill="#e53935" stroke="#6b4300" stroke-width="4"/><circle cx="253" cy="7" r="3" fill="#fff" opacity=".8"/>
+    <circle cx="162" cy="26" r="8" fill="#fff" stroke="#6b4300" stroke-width="4"/><circle cx="350" cy="26" r="8" fill="#fff" stroke="#6b4300" stroke-width="4"/>
+    <circle cx="256" cy="80" r="6" fill="#1e88e5" stroke="#6b4300" stroke-width="3"/><circle cx="214" cy="80" r="5" fill="#43a047" stroke="#6b4300" stroke-width="3"/><circle cx="298" cy="80" r="5" fill="#43a047" stroke="#6b4300" stroke-width="3"/>
+  </g>
 </svg>
