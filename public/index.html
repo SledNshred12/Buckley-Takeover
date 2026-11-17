@@ -121,6 +121,8 @@ const RANGE=100;          // meters you must be within
 const WALK_SPEED=45;      // meters per second in walk mode
 const MAX_PLACES=60;
 const SAVE_KEY='buckleyTakeover_v1';
+const PLACES_KEY='buckleyTakeover_places_v1';
+let skipLoading=false,skipCtl=null;
 
 const PLAYERS=[
   {id:0,name:'You',color:'#1a73e8'},
@@ -178,10 +180,15 @@ const SKIP=new Set(['parking','parking_space','bench','waste_basket','toilets','
 async function fetchPlaces(){
   const b=BBOX.join(',');
   const q=`[out:json][timeout:25];(nwr["name"]["amenity"](${b});nwr["name"]["shop"](${b});nwr["name"]["leisure"~"park|playground|stadium|sports_centre|pitch|nature_reserve"](${b});nwr["name"]["tourism"](${b}););out center tags;`;
-  const urls=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+  try{const c=JSON.parse(localStorage.getItem(PLACES_KEY));if(c&&c.list&&c.list.length>=5)return c}catch(e){}
+  const urls=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter','https://maps.mail.ru/osm/tools/overpass/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
   for(const u of urls){
+    if(skipLoading)break;
     try{
-      const r=await fetch(u,{method:'POST',body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'}});
+      $('loadTxt').textContent='Scouting Buckley for real places… (server '+(urls.indexOf(u)+1)+' of '+urls.length+')';
+      const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),9000);skipCtl=ctl;
+      const r=await fetch(u,{method:'POST',signal:ctl.signal,body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'}});
+      clearTimeout(tm);
       if(!r.ok)continue;
       const j=await r.json();
       const seen=new Set(),out=[];
@@ -195,7 +202,9 @@ async function fetchPlaces(){
       }
       if(out.length>=5){
         out.sort((a,b)=>a.prio-b.prio||dist({lat:a.lat,lng:a.lng},{lat:CENTER[0],lng:CENTER[1]})-dist({lat:b.lat,lng:b.lng},{lat:CENTER[0],lng:CENTER[1]}));
-        return {real:true,list:out.slice(0,MAX_PLACES)};
+        const res={real:true,list:out.slice(0,MAX_PLACES)};
+        try{localStorage.setItem(PLACES_KEY,JSON.stringify(res))}catch(e){}
+        return res;
       }
     }catch(e){}
   }
@@ -434,7 +443,10 @@ if(saved&&saved.places&&!saved.over){
   $('playBtn').onclick=()=>{S=saved;begin()};
   $('newBtn').onclick=restart;
 }else{
+  setTimeout(()=>{if($('playBtn').disabled){const b=$('newBtn');b.style.display='block';b.textContent='Skip — play the practice map now';
+    b.onclick=()=>{skipLoading=true;if(skipCtl)skipCtl.abort()}}},6000);
   fetchPlaces().then(data=>{
+    $('newBtn').style.display='none';
     newGame(data);
     $('loadTxt').textContent=data.real?`Found ${data.list.length} real places in Buckley!`:'Could not load real places (no internet?) — using a practice map.';
     $('playBtn').disabled=false;$('playBtn').textContent='▶ Play';
