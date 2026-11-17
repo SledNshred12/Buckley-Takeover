@@ -232,35 +232,36 @@ const SKIP=new Set(['parking','parking_space','bench','waste_basket','toilets','
 
 async function fetchPlaces(){
   const b=BBOX.join(',');
-  const q=`[out:json][timeout:25];(nwr["name"]["amenity"](${b});nwr["name"]["shop"](${b});nwr["name"]["leisure"~"park|playground|stadium|sports_centre|pitch|nature_reserve"](${b});nwr["name"]["tourism"](${b}););out center tags;`;
+  const q=`[out:json][timeout:20];(nwr["name"]["amenity"](${b});nwr["name"]["shop"](${b});nwr["name"]["leisure"~"park|playground|stadium|sports_centre|pitch|nature_reserve"](${b});nwr["name"]["tourism"](${b}););out center tags;`;
   try{const c=JSON.parse(localStorage.getItem(PLACES_KEY));if(c&&c.list&&c.list.length>=5)return c}catch(e){}
   const urls=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter','https://maps.mail.ru/osm/tools/overpass/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
-  for(const u of urls){
-    if(skipLoading)break;
-    try{
-      $('loadTxt').textContent='Scouting Buckley for real places… (server '+(urls.indexOf(u)+1)+' of '+urls.length+')';
-      const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),9000);skipCtl=ctl;
-      const r=await fetch(u,{method:'POST',signal:ctl.signal,body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'}});
-      clearTimeout(tm);
-      if(!r.ok)continue;
-      const j=await r.json();
-      const seen=new Set(),out=[];
-      for(const e of j.elements){
-        const t=e.tags||{};if(!t.name||SKIP.has(t.amenity))continue;
-        if(t.leisure==='pitch'&&!t.name)continue;
-        const key=t.name.toLowerCase();if(seen.has(key))continue;seen.add(key);
-        const lat=e.lat??e.center?.lat,lng=e.lon??e.center?.lon;if(lat==null)continue;
-        const c=classify(t);
-        out.push({name:t.name,lat,lng,...c});
-      }
-      if(out.length>=5){
-        out.sort((a,b)=>a.prio-b.prio||dist({lat:a.lat,lng:a.lng},{lat:CENTER[0],lng:CENTER[1]})-dist({lat:b.lat,lng:b.lng},{lat:CENTER[0],lng:CENTER[1]}));
-        const res={real:true,list:out.slice(0,MAX_PLACES)};
-        try{localStorage.setItem(PLACES_KEY,JSON.stringify(res))}catch(e){}
-        return res;
-      }
-    }catch(e){}
-  }
+  $('loadTxt').textContent='Scouting Buckley for real places…';
+  const ctls=urls.map(()=>new AbortController());
+  skipCtl={abort:()=>ctls.forEach(c=>c.abort())};
+  const tm=setTimeout(()=>skipCtl.abort(),25000);
+  const tryOne=async(u,ctl)=>{
+    const r=await fetch(u,{method:'POST',signal:ctl.signal,body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'}});
+    if(!r.ok)throw new Error('http '+r.status);
+    const j=await r.json();
+    const seen=new Set(),out=[];
+    for(const e of j.elements){
+      const t=e.tags||{};if(!t.name||SKIP.has(t.amenity))continue;
+      const key=t.name.toLowerCase();if(seen.has(key))continue;seen.add(key);
+      const lat=e.lat??e.center?.lat,lng=e.lon??e.center?.lon;if(lat==null)continue;
+      out.push({name:t.name,lat,lng,...classify(t)});
+    }
+    if(out.length<5)throw new Error('too few');
+    return out;
+  };
+  try{
+    const out=await Promise.any(urls.map((u,i)=>tryOne(u,ctls[i])));
+    clearTimeout(tm);skipCtl.abort();
+    const C={lat:CENTER[0],lng:CENTER[1]};
+    out.sort((a,b)=>a.prio-b.prio||dist(a,C)-dist(b,C));
+    const res={real:true,list:out.slice(0,MAX_PLACES)};
+    try{localStorage.setItem(PLACES_KEY,JSON.stringify(res))}catch(e){}
+    return res;
+  }catch(e){clearTimeout(tm)}
   // offline fallback: made-up spots around downtown
   const names=['Main St Diner','Corner Market','River Park','Foothills Gas','Town Hall','Buckley Bakery','Ball Field','Pizza Spot','Hardware Barn','Coffee Stand','Library','Old Church','Burger Shack','Auto Fix','Ice Cream Hut','Fire Station','Bank','Pet Clinic','Book Nook','Skate Park'];
   const kinds=[['Restaurant','🍽️'],['Store','🛒'],['Park','🌳'],['Gas station','⛽'],['City building','🏛️'],['Café','☕'],['Sports','🏟️'],['Fast food','🍔'],['Hardware store','🔨'],['Café','☕'],['Library','📚'],['Church','⛪'],['Fast food','🍔'],['Auto shop','🔧'],['Café','☕'],['Fire station','🚒'],['Bank','🏦'],['Health','🏥'],['Shop','🛍️'],['Park','🌳']];
@@ -279,8 +280,8 @@ function newGame(data){
 
 function initMap(){
   map=L.map('map',{zoomControl:false,attributionControl:true}).setView([S.me.lat,S.me.lng],17);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
-    maxZoom:20,subdomains:'abcd',attribution:'© OpenStreetMap contributors © CARTO'}).addTo(map);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
   rangeCircle=L.circle([S.me.lat,S.me.lng],{radius:RANGE,color:'#1a73e8',weight:2,fillColor:'#1a73e8',fillOpacity:.08}).addTo(map);
   meMarker=L.marker([S.me.lat,S.me.lng],{icon:L.divIcon({className:'',html:'<div class="me">🧢</div>',iconSize:[30,30],iconAnchor:[15,15]}),zIndexOffset:1000}).addTo(map);
   S.places.forEach(p=>{
@@ -510,7 +511,7 @@ function begin(){
   initMap();updateHUD();requestAnimationFrame(frame);setInterval(tick,5000);
   toast('Tap the map to walk. Glowing pins are close enough to capture!');
 }
-if(saved&&saved.places&&!saved.over){
+if(saved&&saved.places&&!saved.over&&saved.real){
   $('loadTxt').textContent='Your takeover is saved — welcome back!';
   $('playBtn').disabled=false;$('playBtn').textContent='▶ CONTINUE';
   $('newBtn').style.display='block';
