@@ -75,7 +75,7 @@
   /* overlays */
   .overlay{position:fixed;inset:0;z-index:2000;background:rgba(10,20,40,.85);color:#fff;display:none;align-items:center;justify-content:center;flex-direction:column;padding:24px;text-align:center}
   .overlay.show{display:flex}
-  .card{background:#fff;color:#202124;border-radius:20px;padding:22px;max-width:420px;width:100%;text-align:left}
+  .card{background:#fff;color:#202124;border-radius:20px;padding:22px;max-width:420px;width:100%;text-align:left;max-height:85vh;overflow-y:auto}
   .card h1{margin:0 0 4px;font-size:28px;text-align:center}
   .card ul{padding-left:20px;line-height:1.5;font-size:15px}
   #tapBtn{width:200px;height:200px;border-radius:50%;border:0;background:#d93025;color:#fff;font-size:30px;font-weight:900;box-shadow:0 8px 0 #8c1d18;margin:20px 0;touch-action:manipulation;user-select:none}
@@ -117,6 +117,11 @@
   #playBtn{background:#fbbc04;color:#202124;font-family:Bungee,sans-serif;font-size:22px;box-shadow:0 5px 0 #b06000;margin-top:22px}
   #playBtn:active{transform:translateY(3px);box-shadow:0 2px 0 #b06000}
   #newBtn{background:rgba(255,255,255,.15);color:#fff}
+  #ver{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));font-size:12px;opacity:.55;z-index:3;font-weight:600}
+  #newsBtn{background:rgba(255,255,255,.15);color:#fff;position:relative}
+  #newsBtn .badge{position:absolute;top:-6px;right:14px;background:#ea4335;color:#fff;font-size:11px;font-weight:900;padding:2px 7px;border-radius:9px}
+  .news h3{margin:14px 0 4px;font-size:15px}.news h3 span{color:#5f6368;font-weight:600;font-size:12px}
+  .news ul{margin:0;padding-left:20px;font-size:14px;line-height:1.45}
   #how{margin-top:14px;max-width:340px;text-align:left;font-size:14px;background:rgba(255,255,255,.08);border-radius:14px;padding:10px 14px}
   #how summary{cursor:pointer;font-weight:700;text-align:center;list-style:none}
   #how ul{padding-left:18px;line-height:1.5;margin:8px 0 0}
@@ -159,6 +164,7 @@
     </div>
     <video id="axiomVid" src="axiom-intro.mp4" playsinline webkit-playsinline preload="auto"></video>
   </div>
+  <div id="ver"></div>
   <div id="splash">
     <img id="logo" src="logo.svg" alt="Buckley Takeover logo">
     <div id="wordmark">BUCKLEY</div>
@@ -169,6 +175,7 @@
     <div id="menu">
       <button class="btn" id="playBtn" disabled>Loading…</button>
       <button class="btn" id="newBtn" style="display:none">Start a new game</button>
+      <button class="btn" id="newsBtn">✨ What's new</button>
       <details id="how"><summary>❓ How to play</summary><ul>
         <li><b>Walk</b> to real places. Tap the map to walk there, or turn on 🛰️ to use real GPS.</li>
         <li>When a place is inside your blue circle, tap it to <b>capture</b> or <b>attack</b>.</li>
@@ -673,6 +680,26 @@ $('locBtn').onclick=()=>{follow=true;map.setView([S.me.lat,S.me.lng],18)};
 $('gpsBtn').onclick=toggleGPS;
 $('lbBtn').onclick=leaderboard;
 
+
+// ---------- version + what's new ----------
+const VERSION='0.7.0';
+const CHANGELOG=[
+  ['0.7.0','Building photos',['Tap a building to see a real street photo of it (from Mapillary) when one exists','Aerial photo of every building, and a 👀 Street View button','Version number and this What\'s New screen']],
+  ['0.6.0','Maps upgrade',['🛰️ Satellite view — tap the square in the bottom-left','Blue “YOU” locator dot that points where you’re heading','🧭 Directions to any building, with real walking routes']],
+  ['0.5.0','Real Buckley',['Free OpenStreetMap map (no more “API key required”)','Real Buckley places load much more reliably']],
+  ['0.4.0','Axiom Games intro',['Tap to start, then the Axiom Games intro with the theme song']],
+  ['0.3.0','New look',['Buckley Takeover logo with Mount Rainier','New loading screen with tips']],
+  ['0.2.0','Online!',['Game goes live at buckley-takeover.pages.dev','Loading no longer gets stuck']],
+  ['0.1.0','First version',['Real map of Buckley, capture places, tap-battles, 3 rival crews, coins and crew']]
+];
+$('ver').textContent='v'+VERSION;
+let seenVer=null;try{seenVer=localStorage.getItem('buckleySeenVer')}catch(e){}
+if(seenVer!==VERSION)$('newsBtn').innerHTML+='<span class="badge">NEW</span>';
+$('newsBtn').onclick=()=>{
+  try{localStorage.setItem('buckleySeenVer',VERSION)}catch(e){}
+  const b=$('newsBtn').querySelector('.badge');if(b)b.remove();
+  showMsg(`<h1>✨ What's new</h1><div class="news">${CHANGELOG.map(([v,t,items])=>`<h3>${t} <span>v${v}</span></h3><ul>${items.map(i=>`<li>${i}</li>`).join('')}</ul>`).join('')}</div><button class="btn primary" onclick="hideMsg()">Got it</button>`);
+};
 
 // ---------- loading screen ----------
 const TIPS=['Tip: Schools and city buildings pay the most coins.','Tip: Tap the red button FAST in battles for extra power.','Tip: A failed attack still weakens the defense — try again!','Tip: Fortify your best places so rivals bounce off.','Tip: Glowing pins are close enough to capture.','Tip: Turn on 🛰️ to play with your real location.'];
