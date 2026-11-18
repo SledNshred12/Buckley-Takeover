@@ -127,6 +127,16 @@
   #newsBtn .badge{position:absolute;top:-6px;right:14px;background:#ea4335;color:#fff;font-size:11px;font-weight:900;padding:2px 7px;border-radius:9px}
   .news h3{margin:14px 0 4px;font-size:15px}.news h3 span{color:#5f6368;font-weight:600;font-size:12px}
   .news ul{margin:0;padding-left:20px;font-size:14px;line-height:1.45}
+  #joinBox{width:100%;max-width:320px;margin-top:18px;display:none;text-align:left}
+  #joinBox label{font-size:13px;opacity:.8;font-weight:700}
+  #nameIn{width:100%;height:46px;border-radius:12px;border:0;padding:0 14px;font-size:17px;margin:6px 0 12px;outline:none}
+  #swatches{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
+  .sw{width:34px;height:34px;border-radius:50%;border:3px solid transparent;cursor:pointer;box-shadow:0 0 0 1px rgba(255,255,255,.4)}
+  .sw.on{border-color:#fff;transform:scale(1.12)}
+  #joinErr{color:#ffb4ab;font-size:13px;min-height:18px;margin-top:6px;font-weight:700}
+  #whoami{font-size:13px;opacity:.8;margin-top:8px}
+  #whoami a{color:#fff}
+  .lb .wins{font-size:12px;color:#b06000;font-weight:800}
   #how{margin-top:14px;max-width:340px;text-align:left;font-size:14px;background:rgba(255,255,255,.08);border-radius:14px;padding:10px 14px}
   #how summary{cursor:pointer;font-weight:700;text-align:center;list-style:none}
   #how ul{padding-left:18px;line-height:1.5;margin:8px 0 0}
@@ -178,14 +188,22 @@
     <div id="loadTxt">Scouting Buckley for real places…</div>
     <div id="tip"></div>
     <div id="menu">
+      <div id="joinBox">
+        <label for="nameIn">Pick your player name</label>
+        <input id="nameIn" maxlength="16" autocomplete="off" placeholder="3–16 letters or numbers">
+        <label>Pick your color</label>
+        <div id="swatches"></div>
+        <div id="joinErr"></div>
+      </div>
       <button class="btn" id="playBtn" disabled>Loading…</button>
+      <div id="whoami"></div>
       <button class="btn" id="newBtn" style="display:none">Start a new game</button>
       <button class="btn" id="newsBtn">✨ What's new</button>
       <details id="how"><summary>❓ How to play</summary><ul>
         <li><b>Walk</b> to real places. Tap the map to walk there, or turn on 🛰️ to use real GPS.</li>
         <li>When a place is inside your blue circle, tap it to <b>capture</b> or <b>attack</b>.</li>
         <li>Places you own earn 🪙 coins. Spend them on crew and defenses.</li>
-        <li>Three rival crews want Buckley too. Own <b>every place</b> to win!</li>
+        <li>Real players all over Buckley want it too. Own <b>every place</b> to win the season — then the map resets and a new season starts.</li>
       </ul></details>
     </div>
   </div>
@@ -212,13 +230,26 @@ const MAPILLARY_TOKEN='MLY|28992291320412956|de242ad7b1704c5d7222ca19c41a4e4c'; 
 const PLACES_KEY='buckleyTakeover_places_v2';
 let skipLoading=false,skipCtl=null;
 
-const PLAYERS=[
-  {id:0,name:'You',color:'#1a73e8'},
-  {id:1,name:'Red Raiders',color:'#d93025'},
-  {id:2,name:'Purple Pack',color:'#8e24aa'},
-  {id:3,name:'Gold Gang',color:'#f29900'}
-];
+// ---------- online server (Supabase) ----------
+const SB_URL='https://ucvhkcgivhtijmgaxfdj.supabase.co';
+const SB_KEY='sb_publishable_6NP8oY3ZZH4zkMMCvQSvkg_T7dr0YkR';
+const ID_KEY='buckleyOnlineId';
+const COLORS=['#1a73e8','#d93025','#8e24aa','#f29900','#188038','#00897b','#e91e63','#5d4037','#3949ab','#212121'];
 const NEUTRAL='#80868b';
+let ME=null;          // {id, secret, name, color}
+let PL={};            // players by id
+let lastEvent=0,seasonId=null,pollTimer=null,offlineShown=false;
+try{ME=JSON.parse(localStorage.getItem(ID_KEY))}catch(e){}
+const ERRORS={name_length:'Names need 3–16 characters.',name_chars:'Only letters, numbers, spaces, _ . - please.',name_bad:'Pick a friendlier name.',
+  name_taken:'That name is taken — try another.',bad_color:'Pick a color.',not_enough_coins:'Not enough coins yet.',too_fast:'Catch your breath — wait a few seconds between attacks.',
+  already_yours:'You already own this place!',no_crew:'You need crew first — recruit some.',not_yours:'That place isn’t yours.',max_defense:'Defense is maxed out.',not_logged_in:'Your player login was lost.'};
+async function rpc(fn,args){
+  const r=await fetch(`${SB_URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(args||{})});
+  const j=await r.json().catch(()=>null);
+  if(!r.ok){const code=(j&&j.message)||'server_error';const e=new Error(ERRORS[code]||'The game server had a problem. Try again.');e.code=code;throw e}
+  return j;
+}
+const auth=()=>({p_id:ME.id,p_secret:ME.secret});
 
 let S=null; // game state
 let map,meMarker,rangeCircle,markers={},follow=true,walkTarget=null,gpsWatch=null,selected=null;
@@ -230,8 +261,10 @@ function dist(a,b){const R=6371000,t=Math.PI/180;const dLat=(b.lat-a.lat)*t,dLng
   const x=Math.sin(dLat/2)**2+Math.cos(a.lat*t)*Math.cos(b.lat*t)*Math.sin(dLng/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
 function fmtDist(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km'}
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),3200)}
-function colorOf(owner){return owner==null?NEUTRAL:PLAYERS[owner].color}
-function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
+function colorOf(owner){return owner==null?NEUTRAL:(PL[owner]?PL[owner].color:'#555')}
+function nameOf(owner){return owner==null?'Nobody yet':(owner===ME?.id?'You':(PL[owner]?PL[owner].name:'Someone'))}
+const mine=p=>ME&&p.owner===ME.id;
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({me:S.me}))}catch(e){}} // only YOUR position, kept on this device
 
 // ---------- classify real places ----------
 function classify(t){
@@ -309,14 +342,46 @@ async function fetchPlaces(){
   return {real:false,list:names.map((n,i)=>({name:n,lat:CENTER[0]+rand(-.009,.009),lng:CENTER[1]+rand(-.014,.014),kind:kinds[i][0],emoji:kinds[i][1],income:4,def:20,prio:2}))};
 }
 
-// ---------- game setup ----------
-function newGame(data){
-  const places=data.list.map((p,i)=>({id:i,name:p.name,img:p.img||null,lat:p.lat,lng:p.lng,kind:p.kind,emoji:p.emoji,income:p.income,maxDef:p.def,def:p.def,owner:null}));
-  S={real:data.real,coins:60,crew:20,me:{lat:CENTER[0],lng:CENTER[1]},places,
-     rivals:[null,{crew:20,coins:0},{crew:20,coins:0},{crew:20,coins:0}],time:0,over:false};
-  // each rival starts with one place far from the middle
-  const far=[...places].sort((a,b)=>dist(b,{lat:CENTER[0],lng:CENTER[1]})-dist(a,{lat:CENTER[0],lng:CENTER[1]}));
-  [1,2,3].forEach((r,i)=>{const p=far[i*3]||far[i];if(p&&p.owner==null){p.owner=r;p.def=Math.round(p.maxDef*0.8)}});
+// ---------- game setup (places come from the server) ----------
+function loadWorld(w){
+  S.places=w.places.map((p,i)=>({id:i,sid:p.id,name:p.name,lat:p.lat,lng:p.lng,kind:p.kind,emoji:p.emoji,income:p.income,owner:p.owner,def:p.def,maxDef:+p.max_def,img:null}));
+  // borrow photo tags from the OpenStreetMap lookup if we have it cached
+  try{const c=JSON.parse(localStorage.getItem(PLACES_KEY));if(c&&c.list){const by={};c.list.forEach(q=>by[q.name]=q.img);S.places.forEach(p=>{if(by[p.name])p.img=by[p.name]})}}catch(e){}
+  applyWorld(w,true);
+}
+function applyWorld(w,first){
+  PL={};(w.players||[]).forEach(p=>PL[p.id]=p);
+  const bySid={};S.places.forEach(p=>bySid[p.sid]=p);
+  (w.places||[]).forEach(q=>{const p=bySid[q.id];if(p){p.owner=q.owner;p.def=q.def;p.maxDef=+q.max_def}});
+  if(w.me){S.coins=w.me.coins;S.crew=w.me.crew;ME.name=w.me.name;ME.color=w.me.color}
+  const sid=w.season&&w.season.id;
+  if(!first&&seasonId&&sid&&sid!==seasonId){}// season change is announced by its event
+  seasonId=sid;
+  if(!first)(w.events||[]).forEach(handleEvent);
+  if(w.last_event!=null)lastEvent=Math.max(lastEvent,w.last_event);
+  if(map){updateHUD();refreshPins();if(selected!=null)openPlace(selected,true)}
+}
+function handleEvent(e){
+  if(e.id<=lastEvent)return;
+  const meId=ME&&ME.id;
+  if(e.kind==='season'){
+    showMsg(`<h1>👑 Season over!</h1><p style="text-align:center">${e.text}</p><p style="text-align:center;color:#5f6368">${e.actor===meId?'That’s YOU — you’re in the Hall of Fame!':'Everyone starts fresh with 60🪙 and 20 crew. Go!'}</p><button class="btn primary" onclick="hideMsg()">Let’s go</button>`);
+    return;
+  }
+  if(e.actor===meId)return; // your own moves already showed a result
+  if(e.kind==='capture'&&e.victim===meId)toast('🚨 '+e.text+'!');
+  else if(e.kind==='defend'&&e.victim===meId)toast('🛡️ '+e.text+'!');
+  else if(e.kind==='capture')toast(e.text);
+  else if(e.kind==='join')toast('👋 '+e.text);
+}
+async function poll(){
+  try{
+    const w=await rpc('get_world',{...auth(),p_since:lastEvent,p_full:false});
+    offlineShown=false;applyWorld(w,false);
+  }catch(e){
+    if(e.code==='not_logged_in'){toast('Your player login was lost — please join again.');try{localStorage.removeItem(ID_KEY)}catch(_){}setTimeout(()=>location.reload(),2500);return}
+    if(!offlineShown){offlineShown=true;toast('📶 Can’t reach the game server — retrying…')}
+  }
 }
 
 function initMap(){
@@ -360,7 +425,7 @@ function setMapType(sat){
 }
 
 function pinIcon(p){
-  const near=p.owner!==0&&dist(S.me,p)<=RANGE;
+  const near=!mine(p)&&dist(S.me,p)<=RANGE;
   return L.divIcon({className:'',html:`<div class="pin${near?' near':''}" style="--c:${colorOf(p.owner)}"><span>${p.emoji}</span></div>`,iconSize:[38,38],iconAnchor:[19,40]});
 }
 function refreshPins(){S.places.forEach(p=>markers[p.id].setIcon(pinIcon(p)))}
@@ -433,13 +498,14 @@ function stopGPS(){if(gpsWatch!=null)navigator.geolocation.clearWatch(gpsWatch);
 
 // ---------- HUD ----------
 function updateHUD(){
-  const counts=[0,0,0,0];let neutral=0;
-  S.places.forEach(p=>p.owner==null?neutral++:counts[p.owner]++);
-  const total=S.places.length;
-  $('coins').textContent=Math.floor(S.coins);$('crew').textContent=S.crew;
-  $('owned').textContent=counts[0]+'/'+total;
-  $('progTxt').textContent=`Buckley: ${Math.round(counts[0]/total*100)}% yours`;
-  $('bar').innerHTML=counts.map((c,i)=>`<div style="width:${c/total*100}%;background:${PLAYERS[i].color}"></div>`).join('');
+  const total=S.places.length||1,counts={};
+  S.places.forEach(p=>{if(p.owner)counts[p.owner]=(counts[p.owner]||0)+1});
+  const myCount=counts[ME.id]||0;
+  $('coins').textContent=Math.floor(S.coins);$('crew').textContent=Math.floor(S.crew);
+  $('owned').textContent=myCount+'/'+S.places.length;
+  $('progTxt').textContent=`Buckley: ${Math.round(myCount/total*100)}% yours`;
+  const order=Object.keys(counts).sort((a,b)=>(b===ME.id)-(a===ME.id)||counts[b]-counts[a]);
+  $('bar').innerHTML=order.map(id=>`<div style="width:${counts[id]/total*100}%;background:${colorOf(id)}"></div>`).join('');
   $('modeChip').textContent=S.mode==='gps'?'🛰️ GPS mode':'🚶 Walk mode';
   $('gpsBtn').classList.toggle('on',S.mode==='gps');
   $('recruit').disabled=S.coins<20;$('recruit').style.opacity=S.coins<20?.6:1;
@@ -449,9 +515,9 @@ function updateHUD(){
 function openPlace(id,quiet,force){
   selected=id;const p=S.places[id],d=dist(S.me,p),inRange=d<=RANGE;
   if(photoFor!==id||!$('sheet').classList.contains('open'))setupPhoto(p);
-  const ownerName=p.owner==null?'Nobody yet':PLAYERS[p.owner].name;
+  const ownerName=nameOf(p.owner);
   let actions='';
-  if(p.owner===0){
+  if(mine(p)){
     actions=`<button class="btn primary" onclick="fortify(${id})" ${S.coins<30?'disabled':''}>🛡️ Fortify +10 defense · 30🪙</button>`;
   }else if(!inRange){
     actions=`<div class="sub" style="margin:4px 0 0">Get within ${RANGE} m to capture — ${fmtDist(d-RANGE)} to go</div>`;
@@ -460,9 +526,9 @@ function openPlace(id,quiet,force){
     const max=Math.max(1,S.crew),val=Math.min(max,keep?+keep:Math.max(1,Math.min(S.crew,Math.ceil(p.def*1.2))));
     actions=`<div style="font-size:14px;margin-top:6px">Send <b id="sendVal">${val}</b> of your ${S.crew} crew</div>
       <input type="range" id="sendRange" min="1" max="${max}" value="${val}" oninput="$('sendVal').textContent=this.value">
-      <button class="btn ${p.owner==null?'primary':'danger'}" onclick="startBattle(${id})" ${S.crew<1?'disabled':''}>${p.owner==null?'🚩 Capture it!':'⚔️ Attack '+PLAYERS[p.owner].name}</button>`;
+      <button class="btn ${p.owner==null?'primary':'danger'}" onclick="startBattle(${id})" ${S.crew<1?'disabled':''}>${p.owner==null?'🚩 Capture it!':'⚔️ Attack '+nameOf(p.owner)}</button>`;
   }
-  if(quiet&&!force&&$('sendRange')&&inRange&&p.owner!==0){ // don't rebuild slider while dragging
+  if(quiet&&!force&&$('sendRange')&&inRange&&!mine(p)){ // don't rebuild slider while dragging
     return;
   }
   $('sheetBody').innerHTML=`
@@ -471,8 +537,8 @@ function openPlace(id,quiet,force){
     <div class="row">
       <div class="stat"><b style="color:${colorOf(p.owner)}">●</b>${ownerName}</div>
       <div class="stat"><b>🛡️ ${Math.round(p.def)}</b>defense</div>
-      <div class="stat"><b>🪙 ${p.income}</b>per turn</div>
-    </div>${p.owner===0||!inRange?routeBox(id):''}${actions}
+      <div class="stat"><b>🪙 ${p.income}</b>per 30 sec</div>
+    </div>${mine(p)||!inRange?routeBox(id):''}${actions}
     <button class="btn ghost" onclick="closeSheet()">Close</button>`;
   $('sheet').classList.add('open');
   if(!quiet){follow=false;map.panTo([p.lat,p.lng])}
@@ -657,7 +723,11 @@ function routeBox(id){
 
 function closeSheet(){$('sheet').classList.remove('open');selected=null;photoFor=null;updateRoute()}
 function goTo(id){const p=S.places[id];if(S.mode==='gps'){toast('Walk there for real! It\'s '+fmtDist(dist(S.me,p))+' away');return}walkTo({lat:p.lat,lng:p.lng});closeSheet()}
-function fortify(id){const p=S.places[id];if(S.coins<30)return;S.coins-=30;p.maxDef+=10;p.def+=10;toast('🛡️ '+p.name+' is stronger!');updateHUD();save();openPlace(id,false)}
+async function fortify(id){
+  const p=S.places[id];
+  try{const r=await rpc('fortify',{...auth(),p_place:p.sid});S.coins=r.coins;S.crew=r.crew;p.def=r.def;p.maxDef=+r.max_def;toast('🛡️ '+p.name+' is stronger!');updateHUD();openPlace(id,true,true)}
+  catch(e){toast(e.message)}
+}
 
 // ---------- battle ----------
 let battle=null;
@@ -677,72 +747,43 @@ function startBattle(id){
 }
 $('tapBtn').addEventListener('pointerdown',e=>{e.preventDefault();if(!battle)return;battle.taps++;
   $('powerBar').firstElementChild.style.width=Math.min(100,battle.taps/40*100)+'%'});
-function fight(sent,def,boost){
-  const atk=sent*boost*rand(.85,1.15),dfn=def*rand(.85,1.15);
-  return {win:atk>dfn,atk,dfn};
-}
-function finishBattle(){
+async function finishBattle(){
   const b=battle;battle=null;$('battle').classList.remove('show');
-  const p=S.places[b.id],boost=1+Math.min(b.taps,40)*.015;
-  const prev=p.owner,r=fight(b.sent,p.def,boost);
+  const p=S.places[b.id];
+  showMsg(`<h1>⚔️ Fighting…</h1><p style="text-align:center">Your crew is storming ${p.name}…</p>`);
+  let r;
+  try{r=await rpc('attack',{...auth(),p_place:p.sid,p_sent:b.sent,p_taps:b.taps})}
+  catch(e){showMsg(`<h1>😬 Hold up</h1><p style="text-align:center">${e.message}</p><button class="btn primary" onclick="hideMsg()">OK</button>`);return}
+  S.coins=r.coins;S.crew=r.crew;
   let html;
-  if(r.win){
-    const lost=Math.min(b.sent-1,Math.round(b.sent*(r.dfn/r.atk)*.5));S.crew-=lost;
-    p.owner=0;p.def=Math.round(p.maxDef*.6);
-    html=`<h1>🎉 Victory!</h1><p style="text-align:center">You took <b>${p.name}</b>${prev!=null?' from '+PLAYERS[prev].name:''}!<br>Power ${Math.round(r.atk)} vs ${Math.round(r.dfn)} · You lost ${lost} crew.</p>`;
+  if(r.season_won){
+    html=`<h1>👑 YOU OWN ALL OF BUCKLEY!</h1><p style="text-align:center">You won the season and made the Hall of Fame. The map resets now — defend your title!</p>`;
+  }else if(r.win){
+    p.owner=ME.id;p.def=Math.round(p.maxDef*.6);
+    html=`<h1>🎉 Victory!</h1><p style="text-align:center">You took <b>${p.name}</b>${r.prev?' from '+r.prev:''}!<br>Power ${r.atk} vs ${r.dfn} · You lost ${r.lost} crew.</p>`;
   }else{
-    const lost=Math.round(b.sent*.5);S.crew-=lost;
-    p.def=Math.max(1,p.def-r.atk*.5);
-    html=`<h1>💥 Pushed back!</h1><p style="text-align:center">${p.name} held on.<br>Power ${Math.round(r.atk)} vs ${Math.round(r.dfn)} · You lost ${lost} crew.<br>But its defense dropped to ${Math.round(p.def)} — try again!</p>`;
+    html=`<h1>💥 Pushed back!</h1><p style="text-align:center">${p.name} held on.<br>Power ${r.atk} vs ${r.dfn} · You lost ${r.lost} crew.<br>But its defense dropped — try again!</p>`;
   }
   showMsg(html+`<button class="btn primary" onclick="hideMsg()">OK</button>`);
-  updateHUD();refreshPins();save();checkEnd();
+  updateHUD();refreshPins();poll();
 }
 function showMsg(h){$('msgCard').innerHTML=h;$('msg').classList.add('show')}
 function hideMsg(){$('msg').classList.remove('show')}
 
-// ---------- economy + rivals ----------
-function tick(){
-  if(S.over)return;S.time++;
-  // income
-  let inc=1;S.places.forEach(p=>{if(p.owner===0)inc+=p.income;if(p.def<p.maxDef)p.def=Math.min(p.maxDef,p.def+1)});
-  S.coins+=inc;if(S.time%2===0)S.crew+=1;
-  // rivals
-  for(const r of [1,2,3]){
-    const R=S.rivals[r];const mine=S.places.filter(p=>p.owner===r);
-    R.coins+=1+mine.reduce((s,p)=>s+p.income,0)*.8;
-    while(R.coins>=20){R.coins-=20;R.crew+=5}
-    if(S.time<6||Math.random()>.28||R.crew<8)continue;
-    // pick a target near their turf
-    const base=mine.length?mine[Math.floor(Math.random()*mine.length)]:{lat:CENTER[0],lng:CENTER[1]};
-    const targets=S.places.filter(p=>p.owner!==r).sort((a,b)=>dist(base,a)-dist(base,b)).slice(0,4);
-    if(!targets.length)continue;
-    const t=targets[Math.floor(Math.random()*targets.length)];
-    const sent=Math.round(R.crew*.7);const res=fight(sent,t.def,1.2);
-    const prev=t.owner;
-    if(res.win){R.crew-=Math.round(sent*(res.dfn/res.atk)*.5);t.owner=r;t.def=Math.round(t.maxDef*.6);
-      if(prev===0)toast(`🚨 ${PLAYERS[r].name} took ${t.name} from you!`);
-      else if(Math.random()<.4)toast(`${PLAYERS[r].name} captured ${t.name}`);
-    }else{R.crew-=Math.round(sent*.5);t.def=Math.max(1,t.def-res.atk*.3);
-      if(prev===0)toast(`🛡️ You defended ${t.name} from ${PLAYERS[r].name}!`);}
-  }
-  updateHUD();refreshPins();save();checkEnd();
-}
-function checkEnd(){
-  const owners=new Set(S.places.map(p=>p.owner));
-  if(owners.size===1&&!owners.has(null)){
-    const w=[...owners][0];S.over=true;save();
-    showMsg(w===0?`<h1>👑 YOU OWN BUCKLEY!</h1><p style="text-align:center">Every single place in town is yours. Legendary.</p><button class="btn primary" onclick="restart()">Play again</button>`
-      :`<h1>😵 Game over</h1><p style="text-align:center">${PLAYERS[w].name} took over all of Buckley.</p><button class="btn primary" onclick="restart()">Try again</button>`);
-  }
-}
+// ---------- leaderboard + hall of fame ----------
 function leaderboard(){
-  const counts=[0,0,0,0];S.places.forEach(p=>{if(p.owner!=null)counts[p.owner]++});
-  const rows=PLAYERS.map((pl,i)=>({pl,c:counts[i],crew:i===0?S.crew:S.rivals[i].crew})).sort((a,b)=>b.c-a.c)
-    .map(x=>`<div class="lb"><span class="dot" style="background:${x.pl.color}"></span>${x.pl.name}<span style="color:#5f6368;font-size:13px">👥 ${x.crew}</span><b>${x.c} 🏢</b></div>`).join('');
-  showMsg(`<h1>🏆 Who owns Buckley</h1>${rows}<p style="color:#5f6368;font-size:13px">${S.places.length} places total${S.real?' — real places from OpenStreetMap':' — offline practice map'}.</p><button class="btn primary" onclick="hideMsg()">Back</button>`);
+  const counts={};S.places.forEach(p=>{if(p.owner)counts[p.owner]=(counts[p.owner]||0)+1});
+  const list=Object.values(PL).map(pl=>({pl,c:counts[pl.id]||0})).filter(x=>x.c>0||x.pl.id===ME.id).sort((a,b)=>b.c-a.c).slice(0,15);
+  const rows=list.map((x,i)=>`<div class="lb"><span style="width:20px;color:#5f6368">${i+1}</span><span class="dot" style="background:${x.pl.color}"></span>${x.pl.id===ME.id?'<b>'+x.pl.name+' (you)</b>':x.pl.name}${x.pl.wins?` <span class="wins">👑×${x.pl.wins}</span>`:''}<b>${x.c} 🏢</b></div>`).join('')||'<p>Nobody owns anything yet — be the first!</p>';
+  const free=S.places.filter(p=>!p.owner).length;
+  showMsg(`<h1>🏆 Season ${seasonId||1}</h1>${rows}<p style="color:#5f6368;font-size:13px">${S.places.length} places in Buckley · ${free} still unclaimed.</p>
+    <button class="btn ghost" onclick="hallOfFame()">👑 Hall of Fame</button><button class="btn primary" onclick="hideMsg()">Back</button>`);
 }
-function restart(){try{localStorage.removeItem(SAVE_KEY)}catch(e){}location.reload()}
+async function hallOfFame(){
+  let rows='';
+  try{const h=await rpc('hall_of_fame');rows=h.map(x=>`<div class="lb"><span style="width:76px;color:#5f6368">Season ${x.season}</span><span class="dot" style="background:${x.color}"></span>${x.winner}<b>👑</b></div>`).join('')}catch(e){}
+  showMsg(`<h1>👑 Hall of Fame</h1>${rows||'<p style="text-align:center">No champions yet. Own all of Buckley to be the first!</p>'}<button class="btn ghost" onclick="leaderboard()">Back to standings</button><button class="btn primary" onclick="hideMsg()">Close</button>`);
+}
 
 // ---------- search ----------
 $('search').addEventListener('input',e=>{
@@ -755,7 +796,10 @@ $('search').addEventListener('input',e=>{
 function pickResult(id){$('results').style.display='none';$('search').value='';$('search').blur();map.setView([S.places[id].lat,S.places[id].lng],18);openPlace(id)}
 
 // ---------- buttons ----------
-$('recruit').onclick=()=>{if(S.coins<20){toast('Need 20🪙 — own more places to earn faster');return}S.coins-=20;S.crew+=5;updateHUD();save();toast('👥 +5 crew!')};
+$('recruit').onclick=async()=>{
+  if(S.coins<20){toast('Need 20🪙 — own more places to earn faster');return}
+  try{const r=await rpc('recruit',auth());S.coins=r.coins;S.crew=r.crew;updateHUD();toast('👥 +5 crew!')}catch(e){toast(e.message)}
+};
 $('locBtn').onclick=()=>{follow=true;map.setView([S.me.lat,S.me.lng],18)};
 $('gpsBtn').onclick=toggleGPS;
 $('lbBtn').onclick=leaderboard;
@@ -780,8 +824,9 @@ document.addEventListener('click',e=>{
 },true);
 
 // ---------- version + what's new ----------
-const VERSION='0.8.2';
+const VERSION='0.9.0';
 const CHANGELOG=[
+  ['0.9.0','ONLINE MULTIPLAYER!',['Buckley Takeover is online — every player fights over the same real map','Pick your player name and color','No more computer crews: every rival is a real person','Own every place to win the season, get into the 👑 Hall of Fame, and the map resets','Your location stays private — other players only see who owns each building']],
   ['0.8.2','Click sounds',['Buttons and places make a little “pop” when you tap them']],
   ['0.8.1','Smarter building photos',['Skips photos taken too close (wall close-ups) or too far away','Zooms in on far-away buildings','👎 Wrong button hides a bad photo for good','The game remembers which photo you picked for each building']],
   ['0.8.0','Walk on the streets',['Tap the map and you walk along real streets and paths instead of cutting straight through town','A dotted line shows the way you’re walking']],
@@ -805,7 +850,7 @@ $('newsBtn').onclick=()=>{
 };
 
 // ---------- loading screen ----------
-const TIPS=['Tip: Schools and city buildings pay the most coins.','Tip: Tap the red button FAST in battles for extra power.','Tip: A failed attack still weakens the defense — try again!','Tip: Fortify your best places so rivals bounce off.','Tip: Glowing pins are close enough to capture.','Tip: Turn on 🛰️ to play with your real location.'];
+const TIPS=['Tip: Schools and city buildings pay the most coins.','Tip: Tap the red button FAST in battles for extra power.','Tip: A failed attack still weakens the defense — try again!','Tip: Fortify your best places so other players bounce off.','Tip: Glowing pins are close enough to capture.','Tip: Turn on 🛰️ to play with your real location.'];
 let tipI=Math.floor(Math.random()*TIPS.length),loadPct=0,loadDone=false;
 function showTip(){const t=$('tip');t.style.opacity=0;setTimeout(()=>{t.textContent=TIPS[tipI++%TIPS.length];t.style.opacity=.65},400)}
 showTip();const tipTimer=setInterval(showTip,3200);
@@ -825,31 +870,56 @@ function finishLoading(){
 }
 
 // ---------- start ----------
-let saved=null;try{saved=JSON.parse(localStorage.getItem(SAVE_KEY))}catch(e){}
+let savedPos=null;try{const o=JSON.parse(localStorage.getItem(SAVE_KEY));savedPos=o&&o.me}catch(e){}
+S={places:[],coins:0,crew:0,mode:'walk',me:savedPos&&savedPos.lat?savedPos:{lat:CENTER[0],lng:CENTER[1]}};
 function begin(){
   $('intro').classList.remove('show');clearInterval(tipTimer);S.mode='walk';
-  initMap();updateHUD();requestAnimationFrame(frame);setInterval(tick,5000);
+  initMap();updateHUD();requestAnimationFrame(frame);
+  pollTimer=setInterval(poll,4000);setInterval(save,10000);
   toast('Tap the map to walk. Glowing pins are close enough to capture!');
 }
-if(saved&&saved.places&&!saved.over&&saved.real){
-  $('loadTxt').textContent='Your takeover is saved — welcome back!';
-  $('playBtn').disabled=false;$('playBtn').textContent='▶ CONTINUE';
-  $('newBtn').style.display='block';
-  $('playBtn').onclick=()=>{S=saved;begin()};
-  setTimeout(finishLoading,2600);
-  $('newBtn').onclick=restart;
-}else{
-  setTimeout(()=>{if($('playBtn').disabled){$('menu').style.display='flex';const b=$('newBtn');b.style.display='block';b.textContent='Skip — play the practice map now';
-    b.onclick=()=>{skipLoading=true;if(skipCtl)skipCtl.abort()}}},6000);
-  fetchPlaces().then(data=>{
-    $('newBtn').style.display='none';
-    newGame(data);
-    $('loadTxt').textContent=data.real?`Found ${data.list.length} real places in Buckley!`:'Could not load real places (no internet?) — using a practice map.';
-    $('playBtn').disabled=false;$('playBtn').textContent='▶ PLAY';
-    $('playBtn').onclick=begin;
-    setTimeout(finishLoading,Math.max(0,2600-performance.now()));
-  });
+let pickColor=COLORS[Math.floor(Math.random()*COLORS.length)];
+function showJoin(){
+  $('joinBox').style.display='block';
+  $('swatches').innerHTML=COLORS.map(c=>`<div class="sw${c===pickColor?' on':''}" data-c="${c}" style="background:${c}"></div>`).join('');
+  $('swatches').onclick=e=>{const c=e.target.dataset&&e.target.dataset.c;if(!c)return;pickColor=c;showJoin()};
+  $('playBtn').disabled=false;$('playBtn').textContent='▶ JOIN THE TAKEOVER';
+  $('playBtn').onclick=async()=>{
+    $('joinErr').textContent='';$('playBtn').disabled=true;$('playBtn').textContent='Joining…';
+    try{
+      const r=await rpc('join_game',{p_name:$('nameIn').value,p_color:pickColor});
+      ME=r;try{localStorage.setItem(ID_KEY,JSON.stringify(r))}catch(e){}
+      await enterGame();
+    }catch(e){$('joinErr').textContent=e.message;$('playBtn').disabled=false;$('playBtn').textContent='▶ JOIN THE TAKEOVER'}
+  };
 }
+async function enterGame(){
+  const w=await rpc('get_world',{...auth(),p_since:0,p_full:true});
+  loadWorld(w);begin();
+}
+async function startOnline(){
+  let w;
+  try{w=await rpc('get_world',{p_since:0,p_full:true})}
+  catch(e){$('loadTxt').textContent='Can’t reach the game server. Check your internet and refresh.';finishLoading();return}
+  if(!w.places.length){ // very first player ever: load Buckley's real places into the shared map
+    $('loadTxt').textContent='Setting up Buckley for everyone…';
+    const data=await fetchPlaces();
+    if(!data.real){$('loadTxt').textContent='Couldn’t load Buckley’s places. Refresh to try again.';finishLoading();return}
+    try{await rpc('seed_places',{p_places:data.list.map(p=>({name:p.name,lat:p.lat,lng:p.lng,kind:p.kind,emoji:p.emoji,income:p.income,def:p.def}))})}catch(e){}
+  }
+  const online=w.players.length;
+  $('loadTxt').textContent=`Buckley is online · Season ${w.season?w.season.id:1}`;
+  if(ME&&ME.id){
+    $('playBtn').disabled=false;$('playBtn').textContent='▶ PLAY';
+    $('whoami').innerHTML=`Playing as <b style="color:${ME.color}">${ME.name}</b>`;
+    $('playBtn').onclick=async()=>{$('playBtn').disabled=true;$('playBtn').textContent='Loading…';
+      try{await enterGame()}catch(e){
+        if(e.code==='not_logged_in'){try{localStorage.removeItem(ID_KEY)}catch(_){}ME=null;$('whoami').textContent='';showJoin()}
+        else{toast(e.message);$('playBtn').disabled=false;$('playBtn').textContent='▶ PLAY'}}};
+  }else showJoin();
+  setTimeout(finishLoading,Math.max(0,2600-performance.now()));
+}
+startOnline();
 </script>
 </body>
 </html>
