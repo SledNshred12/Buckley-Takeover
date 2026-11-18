@@ -36,6 +36,16 @@
   /* place pins */
   .pin{width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--c);border:3px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center}
   .pin span{transform:rotate(45deg);font-size:18px}
+  .pinwrap{position:relative;width:38px;height:38px}
+  .pin.mine{border-color:#fbbc04;box-shadow:0 0 0 3px rgba(251,188,4,.45),0 2px 5px rgba(0,0,0,.4)}
+  .gar{position:absolute;left:50%;top:40px;transform:translateX(-50%);display:flex;align-items:flex-end;gap:1px;background:rgba(255,255,255,.92);border-radius:9px;padding:1px 5px 1px 3px;font:800 11px system-ui;color:#202124;box-shadow:0 1px 3px rgba(0,0,0,.35);white-space:nowrap}
+  .gar svg{display:block}
+  .march{animation:marchBob .32s ease-in-out infinite alternate}
+  @keyframes marchBob{from{transform:scale(1) rotate(-5deg)}to{transform:scale(1.08) rotate(5deg)}}
+  .face{transition:transform .2s;transform-origin:50% 50%}
+  .armyRow{display:flex;justify-content:center;gap:2px;margin:6px 0 2px}
+  .sw.taken{opacity:.22;cursor:not-allowed;position:relative}
+  .sw.taken::after{content:"✕";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900}
   .pin.near{animation:bob 1s infinite alternate}
   @keyframes bob{to{box-shadow:0 0 0 6px rgba(255,255,255,.7),0 2px 5px rgba(0,0,0,.4)}}
   /* player avatar */
@@ -153,7 +163,8 @@
   <div id="results"></div>
   <div id="stats">
     <div class="chip">🪙 <span id="coins">0</span></div>
-    <div class="chip">👥 <span id="crew">0</span> crew</div>
+    <div class="chip">🪖 <span id="crew">0</span> troops</div>
+    <div class="chip" id="tankChip" style="display:flex;align-items:center;gap:4px"><span id="tankIcon"></span><span id="tanks">0</span></div>
     <div class="chip">🏢 <span id="owned">0</span></div>
     <div class="chip" id="modeChip">🚶 Walk mode</div>
   </div>
@@ -161,11 +172,12 @@
 </div>
 
 <div id="fabs" class="ui">
+  <button class="fab" id="armyBtn" title="My army">🪖</button>
   <button class="fab" id="lbBtn" title="Leaderboard">🏆</button>
   <button class="fab" id="gpsBtn" title="Use real GPS">🛰️</button>
   <button class="fab" id="locBtn" title="Center on me"><svg viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="4" fill="#1a73e8"/><circle cx="12" cy="12" r="7.5" fill="none" stroke="#5f6368" stroke-width="2"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke="#5f6368" stroke-width="2"/></svg></button>
 </div>
-<button id="recruit" class="ui">➕ Recruit 5 crew · 20🪙</button>
+<button id="recruit" class="ui">➕ Train 5 troops · 20🪙</button>
 
 <button id="layerBtn" class="ui" title="Change map type"><span>Satellite</span></button>
 <div id="routeChip" class="ui"></div>
@@ -204,8 +216,8 @@
       <button class="btn" id="newsBtn">✨ What's new</button>
       <details id="how"><summary>❓ How to play</summary><ul>
         <li><b>Walk</b> to real places. Tap the map to walk there, or turn on 🛰️ to use real GPS.</li>
-        <li>When a place is inside your blue circle, tap it to <b>capture</b> or <b>attack</b>.</li>
-        <li>Places you own earn 🪙 coins. Spend them on crew and defenses.</li>
+        <li>When a place is inside your blue circle, tap it and <b>send your troops</b> marching in to capture or attack it.</li>
+        <li>Places you own earn 🪙 coins. Spend them on troops and defenses.</li>
         <li>Real players all over Buckley want it too. Own <b>every place</b> to win the season — then the map resets and a new season starts.</li>
       </ul></details>
     </div>
@@ -224,7 +236,7 @@
 <script>
 const CENTER=[47.1632,-122.0268];
 const BBOX=[47.143,-122.075,47.187,-121.985]; // south,west,north,east around Buckley
-const RANGE=100;          // meters you must be within
+const RANGE=200;          // your troops can march to places this close (meters)
 const WALK_SPEED=30;      // meters per second in walk mode
 const MAX_PLACES=60;
 const SAVE_KEY='buckleyTakeover_v1';
@@ -236,7 +248,7 @@ let skipLoading=false,skipCtl=null;
 const SB_URL='https://ucvhkcgivhtijmgaxfdj.supabase.co';
 const SB_KEY='sb_publishable_6NP8oY3ZZH4zkMMCvQSvkg_T7dr0YkR';
 const ID_KEY='buckleyOnlineId';
-const COLORS=['#1a73e8','#d93025','#8e24aa','#f29900','#188038','#00897b','#e91e63','#5d4037','#3949ab','#212121'];
+const COLORS=['#1a73e8','#d93025','#8e24aa','#f29900','#188038','#00897b','#e91e63','#5d4037','#3949ab','#212121','#00acc1','#7cb342','#fdd835','#546e7a','#880e4f','#ff7043'];
 const NEUTRAL='#80868b';
 let ME=null;          // {id, secret, name, color}
 let PL={};            // players by id
@@ -244,7 +256,7 @@ let lastEvent=0,seasonId=null,pollTimer=null,offlineShown=false;
 try{ME=JSON.parse(localStorage.getItem(ID_KEY))}catch(e){}
 const ERRORS={name_length:'Names need 3–16 characters.',name_chars:'Only letters, numbers, spaces, _ . - please.',name_bad:'Pick a friendlier name.',
   name_taken:'That name is taken — try another.',bad_color:'Pick a color.',not_enough_coins:'Not enough coins yet.',too_fast:'Catch your breath — wait a few seconds between attacks.',
-  already_yours:'You already own this place!',no_crew:'You need crew first — recruit some.',not_yours:'That place isn’t yours.',max_defense:'Defense is maxed out.',not_logged_in:'Your player login was lost.'};
+  already_yours:'You already own this place!',no_crew:'You need troops first — train some.',color_taken:'Someone already has that color — pick another.',not_yours:'That place isn’t yours.',max_defense:'Defense is maxed out.',max_tanks:'You already have 10 tanks — that’s the max!',not_logged_in:'Your player login was lost.'};
 async function rpc(fn,args){
   const r=await fetch(`${SB_URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(args||{})});
   const j=await r.json().catch(()=>null);
@@ -355,7 +367,7 @@ function applyWorld(w,first){
   PL={};(w.players||[]).forEach(p=>PL[p.id]=p);
   const bySid={};S.places.forEach(p=>bySid[p.sid]=p);
   (w.places||[]).forEach(q=>{const p=bySid[q.id];if(p){p.owner=q.owner;p.def=q.def;p.maxDef=+q.max_def}});
-  if(w.me){S.coins=w.me.coins;S.crew=w.me.crew;ME.name=w.me.name;ME.color=w.me.color}
+  if(w.me){S.coins=w.me.coins;S.crew=w.me.crew;S.tanks=w.me.tanks||0;ME.name=w.me.name;ME.color=w.me.color}
   const sid=w.season&&w.season.id;
   if(!first&&seasonId&&sid&&sid!==seasonId){}// season change is announced by its event
   seasonId=sid;
@@ -426,9 +438,34 @@ function setMapType(sat){
   try{localStorage.setItem('buckleySat',sat?'1':'0')}catch(e){}
 }
 
+// little plastic army man seen from ABOVE, facing up (north), painted in a player's color
+function soldier(color,h){
+  return `<svg viewBox="0 0 20 20" width="${h}" height="${h}"><g stroke="rgba(0,0,0,.6)" stroke-width="0.9" stroke-linejoin="round">
+    <rect x="13.1" y="1" width="2" height="9.5" rx="0.8" fill="#3c4043"/>
+    <ellipse cx="10" cy="11.5" rx="7" ry="4" fill="${color}"/>
+    <circle cx="4.2" cy="9.2" r="1.7" fill="${color}"/><circle cx="14.1" cy="9.4" r="1.7" fill="${color}"/>
+    <circle cx="10" cy="11" r="4.4" fill="${color}"/>
+    <path d="M7 10.2 Q10 8.2 13 10.2" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="0.8"/>
+    <circle cx="10" cy="11" r="1.1" fill="rgba(255,255,255,.35)" stroke="none"/></g></svg>`;
+}
+// little tank seen from ABOVE, barrel pointing up (north), painted in a player's color
+function tank(color,h){
+  const w=Math.round(h*0.72);
+  return `<svg viewBox="0 0 20 28" width="${w}" height="${h}"><g stroke="rgba(0,0,0,.6)" stroke-width="0.9" stroke-linejoin="round">
+    <rect x="1" y="7" width="4.4" height="20" rx="1.6" fill="#3c4043"/><rect x="14.6" y="7" width="4.4" height="20" rx="1.6" fill="#3c4043"/>
+    <rect x="4.6" y="8" width="10.8" height="18" rx="1.6" fill="${color}"/>
+    <rect x="8.9" y="0.6" width="2.2" height="12" rx="0.8" fill="${color}"/>
+    <circle cx="10" cy="16" r="4.6" fill="${color}"/>
+    <circle cx="10" cy="16" r="1.4" fill="rgba(255,255,255,.35)" stroke="none"/></g>
+    <g stroke="rgba(255,255,255,.25)" stroke-width="0.7"><path d="M1.5 10h3.4M1.5 13h3.4M1.5 16h3.4M1.5 19h3.4M1.5 22h3.4M1.5 25h3.4M15.1 10h3.4M15.1 13h3.4M15.1 16h3.4M15.1 19h3.4M15.1 22h3.4M15.1 25h3.4"/></g></svg>`;
+}
+function soldierRow(color,n,h){let s='';for(let i=0;i<n;i++)s+=soldier(color,h);return s}
+
 function pinIcon(p){
   const near=!mine(p)&&dist(S.me,p)<=RANGE;
-  return L.divIcon({className:'',html:`<div class="pin${near?' near':''}" style="--c:${colorOf(p.owner)}"><span>${p.emoji}</span></div>`,iconSize:[38,38],iconAnchor:[19,40]});
+  // owned places show their garrison: little army men + defense number
+  const gar=p.owner?`<div class="gar">${soldierRow(colorOf(p.owner),Math.max(1,Math.min(3,Math.ceil(p.def/20))),14)}<span style="margin-left:2px">${Math.round(p.def)}</span></div>`:'';
+  return L.divIcon({className:'',html:`<div class="pinwrap"><div class="pin${near?' near':''}${mine(p)?' mine':''}" style="--c:${colorOf(p.owner)}"><span>${p.emoji}</span></div>${gar}</div>`,iconSize:[38,38],iconAnchor:[19,40]});
 }
 function refreshPins(){S.places.forEach(p=>markers[p.id].setIcon(pinIcon(p)))}
 
@@ -503,7 +540,7 @@ function updateHUD(){
   const total=S.places.length||1,counts={};
   S.places.forEach(p=>{if(p.owner)counts[p.owner]=(counts[p.owner]||0)+1});
   const myCount=counts[ME.id]||0;
-  $('coins').textContent=Math.floor(S.coins);$('crew').textContent=Math.floor(S.crew);
+  $('coins').textContent=Math.floor(S.coins);$('crew').textContent=Math.floor(S.crew);$('tanks').textContent=S.tanks||0;$('tankIcon').innerHTML=tank(ME.color,16);
   $('owned').textContent=myCount+'/'+S.places.length;
   $('progTxt').textContent=`Buckley: ${Math.round(myCount/total*100)}% yours`;
   const order=Object.keys(counts).sort((a,b)=>(b===ME.id)-(a===ME.id)||counts[b]-counts[a]);
@@ -511,6 +548,19 @@ function updateHUD(){
   $('modeChip').textContent=S.mode==='gps'?'🛰️ GPS mode':'🚶 Walk mode';
   $('gpsBtn').classList.toggle('on',S.mode==='gps');
   $('recruit').disabled=S.coins<20;$('recruit').style.opacity=S.coins<20?.6:1;
+}
+
+// ---------- tanks ----------
+let selTanks=0;
+function setTanks(d){selTanks=Math.max(0,Math.min(S.tanks||0,selTanks+d));if($('tankN'))$('tankN').textContent=selTanks;powerEst()}
+function powerEst(){
+  const el=$('powerEst');if(!el||selected==null)return;const p=S.places[selected];
+  const tr=+($('sendRange')?$('sendRange').value:0),tk=Math.min(selTanks,S.tanks||0),pw=tr+tk*25;
+  el.innerHTML=`Your power ≈ <b>${pw}</b>${tk?` (${tr} troops + ${tk} tank${tk>1?'s':''} × 25)`:''} vs 🛡️ <b>${Math.round(p.def)}</b> · mini-game adds up to ×1.6`;
+}
+async function buyTank(){
+  try{const r=await rpc('buy_tank',auth());S.coins=r.coins;S.crew=r.crew;S.tanks=r.tanks;updateHUD();toast('🛠️ Tank built! You have '+r.tanks);myArmy()}
+  catch(e){toast(e.message)}
 }
 
 // ---------- place sheet ----------
@@ -522,14 +572,21 @@ function openPlace(id,quiet,force){
   if(mine(p)){
     actions=`<button class="btn primary" onclick="fortify(${id})" ${S.coins<30?'disabled':''}>🛡️ Fortify +10 defense · 30🪙</button>`;
   }else if(!inRange){
-    actions=`<div class="sub" style="margin:4px 0 0">Get within ${RANGE} m to capture — ${fmtDist(d-RANGE)} to go</div>`;
+    actions=`<div class="sub" style="margin:4px 0 0">Your troops can only march ${RANGE} m — get ${fmtDist(d-RANGE)} closer</div>`;
   }else{
     const keep=$('sendRange')?$('sendRange').value:null;
     const max=Math.max(1,S.crew),val=Math.min(max,keep?+keep:Math.max(1,Math.min(S.crew,Math.ceil(p.def*1.2))));
-    actions=`<div style="font-size:14px;margin-top:6px">Send <b id="sendVal">${val}</b> of your ${S.crew} crew</div>
-      <input type="range" id="sendRange" min="1" max="${max}" value="${val}" oninput="$('sendVal').textContent=this.value">
-      <button class="btn ${p.owner==null?'primary':'danger'}" onclick="startBattle(${id})" ${S.crew<1?'disabled':''}>${p.owner==null?'🚩 Capture it!':'⚔️ Attack '+nameOf(p.owner)}</button>`;
+    actions=`<div class="armyRow">${soldierRow(ME.color,Math.min(8,Math.max(1,Math.ceil(val/5))),26)}</div>
+      <div style="font-size:14px;margin-top:2px;text-align:center">Send <b id="sendVal">${val}</b> of your ${Math.floor(S.crew)} troops</div>
+      <input type="range" id="sendRange" min="1" max="${max}" value="${val}" oninput="$('sendVal').textContent=this.value;powerEst()">
+      ${S.tanks?`<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:8px 0 2px">
+        <button class="btn ghost" style="width:46px;margin:0;padding:8px" onclick="setTanks(-1)">−</button>
+        <span id="tankPick" style="display:flex;align-items:center;gap:6px;font-weight:800">${tank(ME.color,22)} × <b id="tankN">${Math.min(selTanks,S.tanks)}</b> of ${S.tanks}</span>
+        <button class="btn ghost" style="width:46px;margin:0;padding:8px" onclick="setTanks(1)">+</button></div>`:''}
+      <div id="powerEst" style="text-align:center;font-size:13px;color:#5f6368;margin-top:4px"></div>
+      <button class="btn ${p.owner==null?'primary':'danger'}" onclick="startBattle(${id})" ${S.crew<1?'disabled':''}>${p.owner==null?'🪖 Send troops to capture':'🪖 Send troops to attack '+nameOf(p.owner)}</button>`;
   }
+  setTimeout(powerEst,0);
   if(quiet&&!force&&$('sendRange')&&inRange&&!mine(p)){ // don't rebuild slider while dragging
     return;
   }
@@ -940,36 +997,80 @@ const GAMES={
 
 // ---------- battle ----------
 let battle=null;
-function startBattle(id){
-  const p=S.places[id];const sent=Math.min(S.crew,+$('sendRange').value);
-  if(sent<1)return;closeSheet();
+let marching=false;
+async function startBattle(id){
+  const p=S.places[id];const sent=Math.min(Math.floor(S.crew),+$('sendRange').value),tk=Math.min(selTanks,S.tanks||0);
+  if(sent+tk<1||marching)return;closeSheet();
+  marching=true;
+  try{await marchTroops(p,sent,tk)}finally{marching=false}
+  playBattle(id,sent,tk);
+}
+// little army men march along the streets from you to the building (only YOU see this — nobody else sees where you are)
+async function marchTroops(p,sent,tk){tk=tk||0;
+  const r=await footRoute(S.me,p,4000);
+  let path=r?[{...S.me},...r.path,{lat:p.lat,lng:p.lng}]:[{...S.me},{lat:p.lat,lng:p.lng}];
+  const segs=[0];for(let i=1;i<path.length;i++)segs.push(segs[i-1]+dist(path[i-1],path[i]));
+  const total=segs[segs.length-1]||1,dur=Math.max(2.5,Math.min(7,total/30)),speed=total/dur;
+  const n=Math.min(8,Math.max(2,Math.ceil(sent/5)));
+  const segAt=d=>{d=Math.max(0,Math.min(total,d));let i=1;while(i<segs.length-1&&segs[i]<d)i++;return[i,d]};
+  const at=d=>{const [i,dd]=segAt(d);const a=path[i-1],b=path[i],f=(dd-segs[i-1])/((segs[i]-segs[i-1])||1);return[a.lat+(b.lat-a.lat)*f,a.lng+(b.lng-a.lng)*f]};
+  const headAt=d=>{const [i]=segAt(d);return bearing(path[i-1],path[i])};
+  // real-world sizes (a bit bigger than life so you can see them): soldier ~2 m, tank ~5 x 10 m
+  const mpp=()=>156543.03*Math.cos(CENTER[0]*Math.PI/180)/2**map.getZoom(); // meters per screen pixel
+  const solPx=()=>Math.round(Math.max(9,Math.min(48,3/mpp())));
+  const tankPx=()=>Math.round(Math.max(18,Math.min(90,10/mpp())));
+  const line=L.polyline(path.map(q=>[q.lat,q.lng]),{color:ME.color,weight:3,opacity:.35,dashArray:'2 8',interactive:false}).addTo(map);
+  // tanks drive single-file down the middle of the road; soldiers march two side by side behind them
+  const units=[];for(let i=0;i<tk;i++)units.push({kind:'tank',lane:0});for(let i=0;i<n;i++)units.push({kind:'sol',lane:i%2?1:-1,row:Math.floor(i/2)});
+  const iconFor=u=>{
+    if(u.kind==='tank'){const h=tankPx(),w=Math.round(h*.72);return L.divIcon({className:'',html:`<div class="face" style="width:${w}px;height:${h}px"><div class="march">${tank(ME.color,h)}</div></div>`,iconSize:[w,h],iconAnchor:[w/2,h/2]})}
+    const h=solPx();return L.divIcon({className:'',html:`<div class="face" style="width:${h}px;height:${h}px"><div style="transform:translateX(${u.lane*h*0.62}px)"><div class="march" style="animation-delay:${(u.row||0)*.08+(u.lane>0?.16:0)}s">${soldier(ME.color,h)}</div></div></div>`,iconSize:[h,h],iconAnchor:[h/2,h/2]});
+  };
+  const men=units.map(u=>L.marker(at(0),{icon:iconFor(u),interactive:false,zIndexOffset:u.kind==='tank'?3100:3000}).addTo(map));
+  const rezoom=()=>men.forEach((m,i)=>m.setIcon(iconFor(units[i])));map.on('zoomend',rezoom);
+  // how far behind the leader each unit walks, in meters (depends on how big they look right now)
+  const offsets=()=>{const mp=mpp(),out=[];let o=0;
+    units.forEach((u,i)=>{if(u.kind==='tank'){out.push(o);o+=tankPx()*mp*1.3}else{if(u.lane<0&&i>tk)o+=solPx()*mp*1.35;if(i===tk&&tk)o+=solPx()*mp*0.4;out.push(o)}});return out};
+  follow=false;map.setView(at(0),19,{animate:false}); // camera zooms in and follows the column
+  toast(`🪖 ${sent} troops${tk?` + ${tk} tank${tk>1?'s':''}`:''} marching to ${p.name}…`);
+  await new Promise(res=>{const t0=performance.now();(function step(){
+    const t=(performance.now()-t0)/1000,offs=offsets();
+    const mid=offs[Math.floor(offs.length/2)];map.panTo(at(t*speed-mid),{animate:false});
+    men.forEach((m,i)=>{const d=t*speed-offs[i];m.setLatLng(at(d));const el=m.getElement();const f=el&&el.querySelector('.face');if(f)f.style.transform=`rotate(${headAt(Math.max(0.1,d))}deg)`});
+    if(t*speed-offs[offs.length-1]>=total)res();else requestAnimationFrame(step)})()});
+  map.off('zoomend',rezoom);
+  await new Promise(res=>setTimeout(res,250));
+  men.forEach(m=>map.removeLayer(m));map.removeLayer(line);
+}
+function playBattle(id,sent,tk){
+  const p=S.places[id];
   const key=gameFor(p),m=MG[key];
-  battle={id,sent,taps:0};
+  battle={id,sent,tk:tk||0,taps:0};
   $('bTitle').textContent=`${m.icon} ${m.title} — ${p.owner==null?'capture':'attack'} ${p.name}`;
   $('bInfo').textContent=m.hint;$('bTimer').textContent='';
   $('battle').classList.add('show');
   runMiniGame(key,p,score=>{
     battle.taps=Math.round(score*40);
-    $('bTimer').textContent=`Power ×${(1+battle.taps*0.015).toFixed(2)} — 👥 ${sent} crew attacking!`;
+    $('bTimer').textContent=`Power ×${(1+battle.taps*0.015).toFixed(2)} — 🪖 ${sent} troops${battle.tk?` + ${battle.tk} tank${battle.tk>1?'s':''}`:''} charging!`;
     setTimeout(finishBattle,700);
   });
 }
 async function finishBattle(){
   const b=battle;battle=null;$('battle').classList.remove('show');
   const p=S.places[b.id];
-  showMsg(`<h1>⚔️ Fighting…</h1><p style="text-align:center">Your crew is storming ${p.name}…</p>`);
+  showMsg(`<h1>⚔️ Fighting…</h1><p style="text-align:center">${soldierRow(ME.color,5,30)}<br>Your troops are storming ${p.name}…</p>`);
   let r;
-  try{r=await rpc('attack',{...auth(),p_place:p.sid,p_sent:b.sent,p_taps:b.taps})}
+  try{r=await rpc('attack2',{...auth(),p_place:p.sid,p_sent:b.sent,p_taps:b.taps,p_tanks:b.tk||0})}
   catch(e){showMsg(`<h1>😬 Hold up</h1><p style="text-align:center">${e.message}</p><button class="btn primary" onclick="hideMsg()">OK</button>`);return}
-  S.coins=r.coins;S.crew=r.crew;
+  S.coins=r.coins;S.crew=r.crew;S.tanks=r.tanks;selTanks=Math.min(selTanks,S.tanks);
   let html;
   if(r.season_won){
     html=`<h1>👑 YOU OWN ALL OF BUCKLEY!</h1><p style="text-align:center">You won the season and made the Hall of Fame. The map resets now — defend your title!</p>`;
   }else if(r.win){
     p.owner=ME.id;p.def=Math.round(p.maxDef*.6);
-    html=`<h1>🎉 Victory!</h1><p style="text-align:center">You took <b>${p.name}</b>${r.prev?' from '+r.prev:''}!<br>Power ${r.atk} vs ${r.dfn} · You lost ${r.lost} crew.</p>`;
+    html=`<h1>🎉 Victory!</h1><p style="text-align:center">You took <b>${p.name}</b>${r.prev?' from '+r.prev:''}!<br>Power ${r.atk} vs ${r.dfn} · You lost ${r.lost} troops.</p>`;
   }else{
-    html=`<h1>💥 Pushed back!</h1><p style="text-align:center">${p.name} held on.<br>Power ${r.atk} vs ${r.dfn} · You lost ${r.lost} crew.<br>But its defense dropped — try again!</p>`;
+    html=`<h1>💥 Pushed back!</h1><p style="text-align:center">${p.name} held on.<br>Power ${r.atk} vs ${r.dfn} · You lost ${r.lost} troops${r.tanks_lost?` and ${r.tanks_lost} tank${r.tanks_lost>1?'s':''} 💥`:''}.<br>But its defense dropped — try again!</p>`;
   }
   showMsg(html+`<button class="btn primary" onclick="hideMsg()">OK</button>`);
   updateHUD();refreshPins();poll();
@@ -1005,11 +1106,36 @@ function pickResult(id){$('results').style.display='none';$('search').value='';$
 // ---------- buttons ----------
 $('recruit').onclick=async()=>{
   if(S.coins<20){toast('Need 20🪙 — own more places to earn faster');return}
-  try{const r=await rpc('recruit',auth());S.coins=r.coins;S.crew=r.crew;updateHUD();toast('👥 +5 crew!')}catch(e){toast(e.message)}
+  try{const r=await rpc('recruit',auth());S.coins=r.coins;S.crew=r.crew;updateHUD();toast('🪖 +5 troops trained!')}catch(e){toast(e.message)}
 };
 $('locBtn').onclick=()=>{follow=true;map.setView([S.me.lat,S.me.lng],18)};
 $('gpsBtn').onclick=toggleGPS;
 $('lbBtn').onclick=leaderboard;
+$('armyBtn').onclick=()=>myArmy();
+async function myArmy(){
+  const mineP=S.places.filter(mine).sort((a,b)=>a.def/a.maxDef-b.def/b.maxDef);
+  const inc=1+mineP.reduce((a,p)=>a+p.income,0);
+  let taken=[];try{taken=await rpc('taken_colors')}catch(e){}
+  const rows=mineP.map(p=>`<div class="lb" style="cursor:pointer" onclick="hideMsg();map.setView([${p.lat},${p.lng}],18);openPlace(${p.id})">${p.emoji} ${p.name}<b style="color:${p.def<p.maxDef*0.5?'#d93025':'#202124'}">🛡️ ${Math.round(p.def)}/${Math.round(p.maxDef)}</b></div>`).join('')
+    ||'<p style="text-align:center;color:#5f6368">You don’t own any places yet. Walk to one and send your troops!</p>';
+  const sw=COLORS.map(c=>{const t=c!==ME.color&&taken.includes(c);return `<div class="sw${c===ME.color?' on':''}${t?' taken':''}" ${t?'':`onclick="recolor('${c}')"`} style="background:${c}"></div>`}).join('');
+  showMsg(`<h1>🪖 My Army</h1>
+    <div class="armyRow">${soldierRow(ME.color,Math.min(10,Math.max(1,Math.ceil(S.crew/10))),34)}</div>
+    <div class="row"><div class="stat"><b>🪖 ${Math.floor(S.crew)}</b>troops</div><div class="stat"><b>${tank(ME.color,18)} ${S.tanks||0}</b>tanks</div><div class="stat"><b>🪙 ${Math.floor(S.coins)}</b>coins</div><div class="stat"><b>+${inc}🪙</b>every 30 sec</div></div>
+    <p style="font-size:13px;color:#5f6368;margin:6px 0">You get +1 troop every minute. Your gold-ringed pins are yours — the number under each one is how many defenders it has. Weakest places are listed first.</p>
+    <div style="background:#f1f3f4;border-radius:14px;padding:12px;margin-top:8px;display:flex;align-items:center;gap:12px">
+      <div>${tank(ME.color,40)}</div>
+      <div style="flex:1;font-size:13px"><b style="font-size:15px">Tanks</b><br>1 tank hits as hard as 25 troops. Never lost when you win — 50/50 chance to get blown up if you lose. Max 10.</div></div>
+    <button class="btn primary" onclick="buyTank()" ${S.coins<150||(S.tanks||0)>=10?'disabled':''}>🛠️ Build a tank · 150🪙</button>
+    <h3 style="margin:10px 0 2px">Your places (${mineP.length})</h3>${rows}
+    <h3 style="margin:14px 0 4px">Your color</h3><div id="swatches" style="display:flex;flex-wrap:wrap;gap:8px">${sw}</div>
+    <button class="btn primary" onclick="hideMsg()">Back to the map</button>`);
+}
+async function recolor(c){
+  try{await rpc('change_color',{...auth(),p_color:c});ME.color=c;try{localStorage.setItem(ID_KEY,JSON.stringify(ME))}catch(e){}
+    if(PL[ME.id])PL[ME.id].color=c;refreshPins();updateHUD();toast('🎨 New color!');myArmy()}
+  catch(e){toast(e.message)}
+}
 
 
 // ---------- click sound (Pop) ----------
@@ -1031,8 +1157,9 @@ document.addEventListener('click',e=>{
 },true);
 
 // ---------- version + what's new ----------
-const VERSION='0.10.1';
+const VERSION='0.11.0';
 const CHANGELOG=[
+  ['0.11.0','Army men and tanks!',['🛠️ Build tanks in My Army (150🪙) — 1 tank hits as hard as 25 troops','Troops and tanks drawn from above, life-size on the map, marching down real streets while the camera follows','Tanks roll down the street with your army men','Your crew is now an army of little plastic soldiers in your color','Send troops marching down real streets to capture buildings (up to 200 m away)','Every building shows its defenders — gold-ringed pins are yours','🪖 My Army: see your troops, income, and all your places (weakest first)','Every player has their own color now — no copycats']],
   ['0.10.1','Smoother walking',['Your locator walks a bit slower so it’s easier to follow on the map']],
   ['0.10.0','Capture mini-games!',['No more tap-spamming — every capture is a mini-game','🎯 Timing throw at shops, ⛽ Fill ’er up at gas stations, 🍔 Burger stack at restaurants','☕ Rush hour orders at cafés, 🏦 Crack the safe at banks, 🏫 Pop quiz at schools, 🍂 Leaf catcher at parks','Play better = your crew hits harder (up to ×1.6)']],
   ['0.9.0','ONLINE MULTIPLAYER!',['Buckley Takeover is online — every player fights over the same real map','Pick your player name and color','No more computer crews: every rival is a real person','Own every place to win the season, get into the 👑 Hall of Fame, and the map resets','Your location stays private — other players only see who owns each building']],
@@ -1080,7 +1207,7 @@ function finishLoading(){
 
 // ---------- start ----------
 let savedPos=null;try{const o=JSON.parse(localStorage.getItem(SAVE_KEY));savedPos=o&&o.me}catch(e){}
-S={places:[],coins:0,crew:0,mode:'walk',me:savedPos&&savedPos.lat?savedPos:{lat:CENTER[0],lng:CENTER[1]}};
+S={places:[],coins:0,crew:0,tanks:0,mode:'walk',me:savedPos&&savedPos.lat?savedPos:{lat:CENTER[0],lng:CENTER[1]}};
 function begin(){
   $('intro').classList.remove('show');clearInterval(tipTimer);S.mode='walk';
   initMap();updateHUD();requestAnimationFrame(frame);
@@ -1088,9 +1215,12 @@ function begin(){
   toast('Tap the map to walk. Glowing pins are close enough to capture!');
 }
 let pickColor=COLORS[Math.floor(Math.random()*COLORS.length)];
-function showJoin(){
+let takenColors=null;
+async function showJoin(){
   $('joinBox').style.display='block';
-  $('swatches').innerHTML=COLORS.map(c=>`<div class="sw${c===pickColor?' on':''}" data-c="${c}" style="background:${c}"></div>`).join('');
+  if(!takenColors){try{takenColors=await rpc('taken_colors')}catch(e){takenColors=[]}
+    if(takenColors.includes(pickColor))pickColor=COLORS.find(c=>!takenColors.includes(c))||pickColor}
+  $('swatches').innerHTML=COLORS.map(c=>{const t=takenColors.includes(c);return `<div class="sw${c===pickColor?' on':''}${t?' taken':''}" ${t?'':`data-c="${c}"`} style="background:${c}"></div>`}).join('');
   $('swatches').onclick=e=>{const c=e.target.dataset&&e.target.dataset.c;if(!c)return;pickColor=c;showJoin()};
   $('playBtn').disabled=false;$('playBtn').textContent='▶ JOIN THE TAKEOVER';
   $('playBtn').onclick=async()=>{
@@ -1099,7 +1229,7 @@ function showJoin(){
       const r=await rpc('join_game',{p_name:$('nameIn').value,p_color:pickColor});
       ME=r;try{localStorage.setItem(ID_KEY,JSON.stringify(r))}catch(e){}
       await enterGame();
-    }catch(e){$('joinErr').textContent=e.message;$('playBtn').disabled=false;$('playBtn').textContent='▶ JOIN THE TAKEOVER'}
+    }catch(e){if(e.code==='color_taken'){takenColors=null;showJoin()}$('joinErr').textContent=e.message;$('playBtn').disabled=false;$('playBtn').textContent='▶ JOIN THE TAKEOVER'}
   };
 }
 async function enterGame(){
