@@ -225,7 +225,7 @@
 const CENTER=[47.1632,-122.0268];
 const BBOX=[47.143,-122.075,47.187,-121.985]; // south,west,north,east around Buckley
 const RANGE=100;          // meters you must be within
-const WALK_SPEED=45;      // meters per second in walk mode
+const WALK_SPEED=30;      // meters per second in walk mode
 const MAX_PLACES=60;
 const SAVE_KEY='buckleyTakeover_v1';
 const MAPILLARY_TOKEN='MLY|28992291320412956|de242ad7b1704c5d7222ca19c41a4e4c'; // Mapillary client token (starts with MLY|) — street-level photos
@@ -1031,8 +1031,9 @@ document.addEventListener('click',e=>{
 },true);
 
 // ---------- version + what's new ----------
-const VERSION='0.10.0';
+const VERSION='0.10.1';
 const CHANGELOG=[
+  ['0.10.1','Smoother walking',['Your locator walks a bit slower so it’s easier to follow on the map']],
   ['0.10.0','Capture mini-games!',['No more tap-spamming — every capture is a mini-game','🎯 Timing throw at shops, ⛽ Fill ’er up at gas stations, 🍔 Burger stack at restaurants','☕ Rush hour orders at cafés, 🏦 Crack the safe at banks, 🏫 Pop quiz at schools, 🍂 Leaf catcher at parks','Play better = your crew hits harder (up to ×1.6)']],
   ['0.9.0','ONLINE MULTIPLAYER!',['Buckley Takeover is online — every player fights over the same real map','Pick your player name and color','No more computer crews: every rival is a real person','Own every place to win the season, get into the 👑 Hall of Fame, and the map resets','Your location stays private — other players only see who owns each building']],
   ['0.8.2','Click sounds',['Buttons and places make a little “pop” when you tap them']],
