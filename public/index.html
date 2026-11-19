@@ -801,13 +801,13 @@ const MG={
   quiz:{icon:'🏫',title:'Pop quiz',hint:'Answer fast — quicker answers hit harder!'},
   leaves:{icon:'🍂',title:'Leaf catcher',hint:'Drag the basket to catch falling leaves!'}
 };
-function gameFor(p){
+function gameFor(p){ // spread evenly over Buckley's places (about 10-16 each)
   const k=p.kind;
-  if(['City building','Police station','Fire station','Bank','School','Library','Church'].includes(k))return 'artillery'; // big landmarks: shell them
-  if(['Gas station','Auto shop','Post office','Hardware store'].includes(k))return 'charge';                               // roadside: storm down the street
-  if(['Restaurant','Fast food','Café','Health','Community center'].includes(k))return 'airdrop';                           // drop supplies on the roof
-  if(['Park','Sports','Attraction'].includes(k))return 'flagrush';                                                         // open fields: tug of war for the flag
-  return 'siege';                                                                                                         // shops & everything else: paintball siege
+  if(['School','Fire station','Police station','Bank','Library','Church','City building'].includes(k))return 'artillery'; // landmarks
+  if(['Restaurant','Fast food'].includes(k))return 'airdrop';
+  if(['Gas station','Auto shop','Post office','Café'].includes(k))return 'charge';
+  if(['Sports','Attraction','Park','Community center'].includes(k))return 'flagrush';
+  return 'siege'; // shops, stores, health, everything else
 }
 let mgRun=null;
 function runMiniGame(key,place,done){
@@ -1072,7 +1072,7 @@ Object.assign(MG,{
   siege:{icon:'🎯',title:'Paintball siege',hint:'Tap defenders when they pop up in the windows. Don’t splat the cat!'},
   artillery:{icon:'💣',title:'Tank artillery',hint:'Drag back from your tank to aim, let go to fire. Watch the wind! 3 shots.'},
   charge:{icon:'🏃',title:'Charge!',hint:'Drag left and right to steer your squad around cars and barricades.'},
-  airdrop:{icon:'🪂',title:'Air drop',hint:'Tap to drop a crate. Lead the target — crates keep the plane’s speed! 4 crates.'},
+  airdrop:{icon:'🪂',title:'Air drop',hint:'Tap to drop a crate onto the roof. Drop early — crates keep the plane’s speed! The plane speeds up each time.'},
   flagrush:{icon:'🚩',title:'Flag rush',hint:'Tap when the marker is in the green zone to pull. Good timing beats mashing!'}
 });
 const svgImgCache={};
@@ -1218,16 +1218,16 @@ Object.assign(GAMES,{
   // 4) AIR DROP — time the crate drops onto a moving roof
   airdrop(api){
     const {W,H}=api,gy=H-30;let px=-60,crates=[],dropped=0,scores=[],t=0,splashes=[];
-    const roof={w:84,y:gy-70};
+    const roof={w:84,y:gy-70},roofAt=W*(0.38+Math.random()*0.3);
     return{
-      update(dt){t+=dt;px+=dt*(150+dropped*25);if(px>W+60)px=-60;
+      update(dt){t+=dt;px+=dt*(150+dropped*35);if(px>W+60)px=-60;
         crates.forEach(cr=>{if(cr.done)return;cr.vy+=320*dt;cr.x+=cr.vx*dt;cr.y+=cr.vy*dt;const rx=this.roofX();
           if(cr.y>=roof.y-12&&cr.y<roof.y+6&&Math.abs(cr.x-rx)<roof.w/2){cr.done=true;cr.y=roof.y-12;const off=Math.abs(cr.x-rx)/(roof.w/2),q=Math.max(.3,1-off*.75);scores.push(q);const [l,col]=label(q);api.pop(off<.2?'BULLSEYE!':l,cr.x,roof.y-30,col);cr.rx=cr.x-rx}
           else if(cr.y>=gy-10){cr.done=true;cr.y=gy-10;scores.push(0);api.pop('MISS',cr.x,gy-30,'#ea4335')}});
         api.status('Crates left: '+(4-dropped));
         if(dropped>=4&&crates.every(c=>c.done)&&scores.length>=4)api.end(scores.reduce((a,b)=>a+b,0)/4)},
-      roofX(){return W/2+Math.sin(t*1.3)*(W/2-70)},
-      tap(){if(dropped>=4||px<10||px>W-10)return;dropped++;crates.push({x:px,y:58,vx:150+(dropped-1)*25,vy:0})},
+      roofX(){return roofAt},
+      tap(){if(dropped>=4||px<10||px>W-10)return;dropped++;crates.push({x:px,y:58,vx:150+(dropped-1)*35,vy:0})},
       draw(c){
         skyGrad(c,W,gy,'#2c3238','#7f8487');rainier(c,W,gy-36,0.75);smoke(c,W*.2,gy-14,performance.now()/1000,.9);
         [[60,90,.8],[230,124,.6],[310,66,.7]].forEach(([x,y,s])=>cloud(c,(x+t*10)%(W+100)-50,y,s,.85));
@@ -1472,8 +1472,9 @@ const Music=(()=>{
 $('musicBtn').onclick=()=>Music.toggle();
 
 // ---------- version + what's new ----------
-const VERSION='0.13.0';
+const VERSION='0.13.1';
 const CHANGELOG=[
+  ['0.13.1','Mini-game fixes',['Mini-games are now spread evenly across Buckley — no more air drop everywhere','Air drop building stays still (the plane speeds up instead)']],
   ['0.13.0','New army mini-games',['🎯 Paintball siege at shops — splat defenders in the windows (not the cat!)','💣 Tank artillery at big landmarks — aim, mind the wind, hit the flag','🏃 Charge! at gas stations & roadside spots — steer your squad around wrecks','🪂 Air drop at restaurants & cafés — land crates on the roof','🚩 Flag rush at parks — tug of war with timing','Gritty war look: storm skies, smoke, Mount Rainier in the distance']],
   ['0.12.0','Background music',['🎵 New background track: “Hometown Patrol” plays while you explore','It gets quieter during battles','🔊 button turns music on or off (the game remembers your choice)']],
   ['0.11.0','Army men and tanks!',['🛠️ Build tanks in My Army (150🪙) — 1 tank hits as hard as 25 troops','Troops and tanks drawn from above, life-size on the map, marching down real streets while the camera follows','Tanks roll down the street with your army men','Your crew is now an army of little plastic soldiers in your color','Send troops marching down real streets to capture buildings (up to 200 m away)','Every building shows its defenders — gold-ringed pins are yours','🪖 My Army: see your troops, income, and all your places (weakest first)','Every player has their own color now — no copycats']],
