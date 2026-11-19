@@ -257,7 +257,7 @@ let lastEvent=0,seasonId=null,pollTimer=null,offlineShown=false;
 try{ME=JSON.parse(localStorage.getItem(ID_KEY))}catch(e){}
 const ERRORS={name_length:'Names need 3–16 characters.',name_chars:'Only letters, numbers, spaces, _ . - please.',name_bad:'Pick a friendlier name.',
   name_taken:'That name is taken — try another.',bad_color:'Pick a color.',not_enough_coins:'Not enough coins yet.',too_fast:'Catch your breath — wait a few seconds between attacks.',
-  already_yours:'You already own this place!',no_crew:'You need troops first — train some.',color_taken:'Someone already has that color — pick another.',not_yours:'That place isn’t yours.',max_defense:'Defense is maxed out.',max_tanks:'You already have 10 tanks — that’s the max!',not_logged_in:'Your player login was lost.'};
+  already_yours:'You already own this place!',no_crew:'You need troops first — train some.',max_troops:'Your army is full (150 troops max).',color_taken:'Someone already has that color — pick another.',not_yours:'That place isn’t yours.',max_defense:'Defense is maxed out.',max_tanks:'You already have 10 tanks — that’s the max!',not_logged_in:'Your player login was lost.'};
 async function rpc(fn,args){
   const r=await fetch(`${SB_URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(args||{})});
   const j=await r.json().catch(()=>null);
@@ -597,7 +597,7 @@ function openPlace(id,quiet,force){
     <div class="row">
       <div class="stat"><b style="color:${colorOf(p.owner)}">●</b>${ownerName}</div>
       <div class="stat"><b>🛡️ ${Math.round(p.def)}</b>defense</div>
-      <div class="stat"><b>🪙 ${p.income}</b>per 30 sec</div>
+      <div class="stat"><b>🪙 ${p.income}</b>per 10 min</div>
     </div>${mine(p)||!inRange?routeBox(id):''}${actions}
     <button class="btn ghost" onclick="closeSheet()">Close</button>`;
   $('sheet').classList.add('open');
@@ -1071,7 +1071,7 @@ function helmetHead(c,cx,cy,col){ // front view defender with shading
 Object.assign(MG,{
   siege:{icon:'🎯',title:'Paintball siege',hint:'Tap defenders when they pop up in the windows. Don’t splat the cat!'},
   artillery:{icon:'💣',title:'Tank artillery',hint:'Drag back from your tank to aim, let go to fire. Watch the wind! 3 shots.'},
-  charge:{icon:'🏃',title:'Charge!',hint:'Drag left and right to steer your squad around cars and barricades.'},
+  charge:{icon:'🏃',title:'Charge!',hint:'Drag left and right to steer your squad. Dodge oncoming cars, barricades and potholes!'},
   airdrop:{icon:'🪂',title:'Air drop',hint:'Tap to drop a crate onto the roof. Drop early — crates keep the plane’s speed! The plane speeds up each time.'},
   flagrush:{icon:'🚩',title:'Flag rush',hint:'Tap when the marker is in the green zone to pull. Good timing beats mashing!'}
 });
@@ -1187,11 +1187,12 @@ Object.assign(GAMES,{
     const {W,H}=api,road={x:30,w:W-60};let time=12,sx=W/2,squad=8,obs=[],spawn=.5,scroll=0,hitFlash=0,inv=0;
     const types=[{k:'car',w:34,h:58},{k:'bar',w:70,h:16},{k:'hole',w:30,h:26}];
     return{
-      update(dt){if(time<=0)return;time-=dt;scroll+=dt*240;hitFlash=Math.max(0,hitFlash-dt);inv=Math.max(0,inv-dt);
+      update(dt){if(time<=0)return;time-=dt;const sp=240+(12-time)*14;scroll+=sp*dt;hitFlash=Math.max(0,hitFlash-dt);inv=Math.max(0,inv-dt);
         api.status('⏱️ '+Math.max(0,time).toFixed(1)+'s · Squad '+squad+'/8');
         spawn-=dt;if(spawn<=0&&time>1.2){spawn=.5+Math.random()*.4-Math.min(.25,(12-time)*.025);const t=types[Math.floor(Math.random()*3)];
-          obs.push({...t,x:road.x+8+Math.random()*(road.w-16-t.w),y:-t.h,col:['#5b6b4a','#4e5458','#6d4c41','#3e4a59','#7a6a55'][Math.floor(Math.random()*5)]})}
-        const sp=240+(12-time)*14;obs.forEach(o=>o.y+=sp*dt);obs=obs.filter(o=>o.y<H+80);
+          const lane=Math.random()<.5?0:1,lx=road.x+(lane+.5)*road.w/2-t.w/2+(Math.random()*16-8);
+          obs.push({...t,x:t.k==='car'?lx:road.x+8+Math.random()*(road.w-16-t.w),y:-t.h-(t.k==='car'?60:0),v:t.k==='car'?120+Math.random()*110:0,col:['#5b6b4a','#4e5458','#6d4c41','#3e4a59','#7a6a55'][Math.floor(Math.random()*5)]})}
+        obs.forEach(o=>o.y+=(sp+o.v)*dt);obs=obs.filter(o=>o.y<H+80); // potholes & walls move with the road; cars also drive toward you
         const sw=64,sy=H-110;if(!inv){const o=obs.find(o=>o.x<sx+sw/2&&o.x+o.w>sx-sw/2&&o.y<sy+44&&o.y+o.h>sy);
           if(o){squad=Math.max(0,squad-(o.k==='car'?2:1));inv=.8;hitFlash=.3;api.pop(o.k==='car'?'−2':'−1',sx,sy-20,'#ea4335');if(!squad){time=0}}}
         if(time<=0)api.end(squad/8)},
@@ -1202,13 +1203,21 @@ Object.assign(GAMES,{
         c.fillStyle='#d6d2c8';c.fillRect(road.x-3,0,3,H);c.fillRect(road.x+road.w,0,3,H);
         c.save();c.translate(0,scroll%64);c.fillStyle=pat(c,'asphalt');c.fillRect(road.x,-64,road.w,H+64);c.restore();
         c.fillStyle='#a8923a';for(let y=-40+(scroll%40);y<H;y+=40){c.fillRect(W/2-4,y,3,22);c.fillRect(W/2+1,y,3,22)}
-        const cw=((scroll*0.25)%520)-60;if(cw<H){c.fillStyle='rgba(200,200,195,.5)';for(let k=road.x+6;k<road.x+road.w-6;k+=16)c.fillRect(k,cw,9,34)}
+        const cw=(scroll%520)-60;if(cw<H){c.fillStyle='rgba(200,200,195,.5)';for(let k=road.x+6;k<road.x+road.w-6;k+=16)c.fillRect(k,cw,9,34)}
         for(let k=0;k<4;k++){const ty=((k*170+scroll)%(H+120))-60;[[12,ty],[W-12,ty+70]].forEach(([x,y])=>{c.fillStyle='rgba(0,0,0,.25)';c.beginPath();c.arc(x+5,y+6,20,0,7);c.fill();const tg=c.createRadialGradient(x-6,y-6,3,x,y,20);tg.addColorStop(0,'#4d5a35');tg.addColorStop(1,'#1f2a17');c.fillStyle=tg;c.beginPath();c.arc(x,y,20,0,7);c.fill()})}
         if(time<3){c.save();c.shadowColor='rgba(0,0,0,.4)';c.shadowBlur=8;c.fillStyle=pat(c,'brick');c.fillRect(W/2-70,0,140,46);c.restore();shade(c,W/2-56,8,112,20,'#263238',3);c.fillStyle='#fff8e1';c.font='800 11px Georgia,serif';c.textAlign='center';c.fillText(api.place.name.slice(0,18).toUpperCase(),W/2,22)}
-        obs.forEach(o=>{if(o.k==='car')carTop(c,o.x,o.y,o.w,o.h,o.col.startsWith('#fff')?'#eceff1':o.col);
-          else if(o.k==='bar'){c.fillStyle='rgba(0,0,0,.3)';c.fillRect(o.x+3,o.y+4,o.w,o.h);c.fillStyle='#8a8478';c.fillRect(o.x,o.y,o.w,o.h);c.fillStyle='#4a4436';for(let k=0;k<o.w;k+=14){c.beginPath();c.moveTo(o.x+k,o.y+o.h);c.lineTo(o.x+k+7,o.y);c.lineTo(o.x+k+14,o.y);c.lineTo(o.x+k+7,o.y+o.h);c.fill()}
+        obs.forEach(o=>{if(o.k==='car'){
+            const hl=c.createLinearGradient(0,o.y+o.h,0,o.y+o.h+70);hl.addColorStop(0,'rgba(255,244,200,.45)');hl.addColorStop(1,'rgba(255,244,200,0)');c.fillStyle=hl;
+            c.beginPath();c.moveTo(o.x+3,o.y+o.h);c.lineTo(o.x-10,o.y+o.h+70);c.lineTo(o.x+o.w+10,o.y+o.h+70);c.lineTo(o.x+o.w-3,o.y+o.h);c.fill();
+            c.strokeStyle='rgba(220,220,220,.25)';c.lineWidth=2;for(let k=0;k<3;k++){const xx=o.x+6+k*(o.w-12)/2;c.beginPath();c.moveTo(xx,o.y-6);c.lineTo(xx,o.y-24-k%2*10);c.stroke()}
+            carTop(c,o.x,o.y,o.w,o.h,o.col.startsWith('#fff')?'#eceff1':o.col)}
+          else if(o.k==='bar'){c.fillStyle='rgba(0,0,0,.4)';c.fillRect(o.x+2,o.y+o.h-1,o.w+2,7);c.fillStyle='#2a2a2a';c.fillRect(o.x+3,o.y+o.h-2,6,6);c.fillRect(o.x+o.w-9,o.y+o.h-2,6,6);c.fillStyle='#8a8478';c.fillRect(o.x,o.y,o.w,o.h);c.fillStyle='#4a4436';for(let k=0;k<o.w;k+=14){c.beginPath();c.moveTo(o.x+k,o.y+o.h);c.lineTo(o.x+k+7,o.y);c.lineTo(o.x+k+14,o.y);c.lineTo(o.x+k+7,o.y+o.h);c.fill()}
             c.fillStyle='#ffeb3b';c.beginPath();c.arc(o.x+4,o.y-2,3,0,7);c.arc(o.x+o.w-4,o.y-2,3,0,7);c.fill()}
-          else{const pg=c.createRadialGradient(o.x+o.w/2,o.y+o.h/2,2,o.x+o.w/2,o.y+o.h/2,o.w/2);pg.addColorStop(0,'#111');pg.addColorStop(.75,'#2b2b2b');pg.addColorStop(1,'#6b6b6b');c.fillStyle=pg;c.beginPath();c.ellipse(o.x+o.w/2,o.y+o.h/2,o.w/2,o.h/2,0,0,7);c.fill()}});
+          else{const cx=o.x+o.w/2,cy=o.y+o.h/2;
+            c.strokeStyle='rgba(0,0,0,.55)';c.lineWidth=1.2;for(let a=0;a<6;a++){const an=a*1.05+o.x*.01;c.beginPath();c.moveTo(cx+Math.cos(an)*o.w*.48,cy+Math.sin(an)*o.h*.48);c.lineTo(cx+Math.cos(an)*o.w*.8,cy+Math.sin(an+.2)*o.h*.8);c.stroke()}
+            c.fillStyle='#55585a';c.beginPath();c.ellipse(cx,cy,o.w/2+2,o.h/2+2,0,0,7);c.fill();
+            const pg=c.createRadialGradient(cx,cy+o.h*.12,1,cx,cy,o.w/2);pg.addColorStop(0,'#0b0b0b');pg.addColorStop(.7,'#1c1c1c');pg.addColorStop(1,'#3a3a3a');c.fillStyle=pg;c.beginPath();c.ellipse(cx,cy,o.w/2,o.h/2,0,0,7);c.fill();
+            c.fillStyle='rgba(120,140,150,.35)';c.beginPath();c.ellipse(cx+2,cy+3,o.w*.28,o.h*.18,0,0,7);c.fill()}});
         const sy=H-110;if(!(inv&&Math.floor(inv*12)%2)){const sv=soldier(ME.color,22);for(let i=0;i<squad;i++){const r=Math.floor(i/4),k=i%4;c.fillStyle='rgba(0,0,0,.25)';c.beginPath();c.ellipse(sx-27+k*18+2,sy+8+r*22+3,8,6,0,0,7);c.fill();drawSvg(c,sv,sx-27+k*18,sy+8+r*22,22,22)}}
         smoke(c,W-24,H*.35,performance.now()/1000,.7);grit(c,W,H);
         if(hitFlash){c.fillStyle='rgba(234,67,53,'+hitFlash+')';c.fillRect(0,0,W,H)}
@@ -1401,15 +1410,15 @@ $('lbBtn').onclick=leaderboard;
 $('armyBtn').onclick=()=>myArmy();
 async function myArmy(){
   const mineP=S.places.filter(mine).sort((a,b)=>a.def/a.maxDef-b.def/b.maxDef);
-  const inc=1+mineP.reduce((a,p)=>a+p.income,0);
+  const inc=10+mineP.reduce((a,p)=>a+p.income,0); // coins per 10 minutes (server: 1/min + income/10 per min)
   let taken=[];try{taken=await rpc('taken_colors')}catch(e){}
   const rows=mineP.map(p=>`<div class="lb" style="cursor:pointer" onclick="hideMsg();map.setView([${p.lat},${p.lng}],18);openPlace(${p.id})">${p.emoji} ${p.name}<b style="color:${p.def<p.maxDef*0.5?'#d93025':'#202124'}">🛡️ ${Math.round(p.def)}/${Math.round(p.maxDef)}</b></div>`).join('')
     ||'<p style="text-align:center;color:#5f6368">You don’t own any places yet. Walk to one and send your troops!</p>';
   const sw=COLORS.map(c=>{const t=c!==ME.color&&taken.includes(c);return `<div class="sw${c===ME.color?' on':''}${t?' taken':''}" ${t?'':`onclick="recolor('${c}')"`} style="background:${c}"></div>`}).join('');
   showMsg(`<h1>🪖 My Army</h1>
     <div class="armyRow">${soldierRow(ME.color,Math.min(10,Math.max(1,Math.ceil(S.crew/10))),34)}</div>
-    <div class="row"><div class="stat"><b>🪖 ${Math.floor(S.crew)}</b>troops</div><div class="stat"><b>${tank(ME.color,18)} ${S.tanks||0}</b>tanks</div><div class="stat"><b>🪙 ${Math.floor(S.coins)}</b>coins</div><div class="stat"><b>+${inc}🪙</b>every 30 sec</div></div>
-    <p style="font-size:13px;color:#5f6368;margin:6px 0">You get +1 troop every minute. Your gold-ringed pins are yours — the number under each one is how many defenders it has. Weakest places are listed first.</p>
+    <div class="row"><div class="stat"><b>🪖 ${Math.floor(S.crew)}</b>troops</div><div class="stat"><b>${tank(ME.color,18)} ${S.tanks||0}</b>tanks</div><div class="stat"><b>🪙 ${Math.floor(S.coins)}</b>of 2,000 max</div><div class="stat"><b>+${inc}🪙</b>every 10 min</div></div>
+    <p style="font-size:13px;color:#5f6368;margin:6px 0">You get +1 troop every 2 minutes (max 150). Coins stop at 2,000, and only your first 4 hours away count — so come back and spend them! Your gold-ringed pins are yours — the number under each one is how many defenders it has. Weakest places are listed first.</p>
     <div style="background:#f1f3f4;border-radius:14px;padding:12px;margin-top:8px;display:flex;align-items:center;gap:12px">
       <div>${tank(ME.color,40)}</div>
       <div style="flex:1;font-size:13px"><b style="font-size:15px">Tanks</b><br>1 tank hits as hard as 25 troops. Never lost when you win — 50/50 chance to get blown up if you lose. Max 10.</div></div>
@@ -1472,8 +1481,9 @@ const Music=(()=>{
 $('musicBtn').onclick=()=>Music.toggle();
 
 // ---------- version + what's new ----------
-const VERSION='0.13.1';
+const VERSION='0.14.0';
 const CHANGELOG=[
+  ['0.14.0','Fairer game',['Coins come in slower: 1 per minute plus a bit from each place you own','🏦 Coin vault holds 2,000 max; only your first 4 hours away count','Troops: +1 every 2 minutes, max 150','Charge!: cars now drive at you in their lanes with headlights; potholes and walls stay on the road']],
   ['0.13.1','Mini-game fixes',['Mini-games are now spread evenly across Buckley — no more air drop everywhere','Air drop building stays still (the plane speeds up instead)']],
   ['0.13.0','New army mini-games',['🎯 Paintball siege at shops — splat defenders in the windows (not the cat!)','💣 Tank artillery at big landmarks — aim, mind the wind, hit the flag','🏃 Charge! at gas stations & roadside spots — steer your squad around wrecks','🪂 Air drop at restaurants & cafés — land crates on the roof','🚩 Flag rush at parks — tug of war with timing','Gritty war look: storm skies, smoke, Mount Rainier in the distance']],
   ['0.12.0','Background music',['🎵 New background track: “Hometown Patrol” plays while you explore','It gets quieter during battles','🔊 button turns music on or off (the game remembers your choice)']],
