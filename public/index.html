@@ -8,6 +8,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#0b1736">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -35,7 +36,14 @@
   #recruit{left:12px;bottom:calc(24px + env(safe-area-inset-bottom));border:0;border-radius:26px;height:52px;padding:0 18px;background:#1a73e8;color:#fff;font-weight:800;font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
   /* place pins */
   .pin{width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--c);border:3px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center}
-  .pin span{transform:rotate(45deg);font-size:18px}
+  .pin span{transform:rotate(45deg);font-size:19px;color:#fff;display:flex}
+  .pin.photo{overflow:hidden;width:44px;height:44px}
+  .pin.photo{position:relative}
+  .pin.photo .ph{position:absolute;inset:0;transform:rotate(45deg) scale(1.45);background-size:cover;background-position:center}
+  i[class^="ti-"]{font-family:"tabler-icons"!important;font-style:normal;font-weight:normal;font-variant:normal;text-transform:none;line-height:1;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;display:inline-block;vertical-align:-0.12em}
+  .chip i[class^="ti-"],.btn i[class^="ti-"]{font-size:1.1em}
+  .fab i[class^="ti-"]{font-size:24px;color:#3c4043}
+  .fab.on i[class^="ti-"]{color:#fff}
   .pinwrap{position:relative;width:38px;height:38px}
   .pin.mine{border-color:#fbbc04;box-shadow:0 0 0 3px rgba(251,188,4,.45),0 2px 5px rgba(0,0,0,.4)}
   .gar{position:absolute;left:50%;top:40px;transform:translateX(-50%);display:flex;align-items:flex-end;gap:1px;background:rgba(255,255,255,.92);border-radius:9px;padding:1px 5px 1px 3px;font:800 11px system-ui;color:#202124;box-shadow:0 1px 3px rgba(0,0,0,.35);white-space:nowrap}
@@ -159,31 +167,31 @@
 <div id="map"></div>
 
 <div id="top" class="ui">
-  <div id="searchWrap"><span>🔍</span><input id="search" placeholder="Search places in Buckley" autocomplete="off"></div>
+  <div id="searchWrap"><span><i class=ti-search></i></span><input id="search" placeholder="Search places in Buckley" autocomplete="off"></div>
   <div id="results"></div>
   <div id="stats">
-    <div class="chip">🪙 <span id="coins">0</span></div>
-    <div class="chip">🪖 <span id="crew">0</span> troops</div>
+    <div class="chip"><i class=ti-coin></i> <span id="coins">0</span></div>
+    <div class="chip"><i class=ti-users-group></i> <span id="crew">0</span> troops</div>
     <div class="chip" id="tankChip" style="display:flex;align-items:center;gap:4px"><span id="tankIcon"></span><span id="tanks">0</span></div>
-    <div class="chip">🏢 <span id="owned">0</span></div>
-    <div class="chip" id="modeChip">🚶 Walk mode</div>
+    <div class="chip"><i class=ti-building></i> <span id="owned">0</span></div>
+    <div class="chip" id="modeChip"><i class=ti-walk></i> Walk mode</div>
   </div>
   <div id="prog"><span id="progTxt">Buckley: 0% yours</span><div id="bar"></div></div>
 </div>
 
 <div id="fabs" class="ui">
-  <button class="fab" id="musicBtn" title="Music on/off">🔊</button>
-  <button class="fab" id="armyBtn" title="My army">🪖</button>
-  <button class="fab" id="lbBtn" title="Leaderboard">🏆</button>
-  <button class="fab" id="gpsBtn" title="Use real GPS">🛰️</button>
+  <button class="fab" id="musicBtn" title="Music on/off"><i class=ti-volume></i></button>
+  <button class="fab" id="armyBtn" title="My army"><i class=ti-users-group></i></button>
+  <button class="fab" id="lbBtn" title="Leaderboard"><i class=ti-trophy></i></button>
+  <button class="fab" id="gpsBtn" title="Use real GPS"><i class=ti-satellite></i></button>
   <button class="fab" id="locBtn" title="Center on me"><svg viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="4" fill="#1a73e8"/><circle cx="12" cy="12" r="7.5" fill="none" stroke="#5f6368" stroke-width="2"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke="#5f6368" stroke-width="2"/></svg></button>
 </div>
-<button id="recruit" class="ui">➕ Train 5 troops · 20🪙</button>
+<button id="recruit" class="ui"><i class=ti-plus></i> Train 5 troops · 20<i class=ti-coin></i></button>
 
 <button id="layerBtn" class="ui" title="Change map type"><span>Satellite</span></button>
 <div id="routeChip" class="ui"></div>
 <div id="sheet" class="ui"><div class="grab"></div>
-  <div id="photoBox"><div id="photoMap"></div><img id="photoImg" alt=""><div id="photoPano"></div><div class="photoTag" id="photoTag">🛰️ Aerial view</div><button id="nextPhoto" class="photoBtn">🔄 Other photo</button><button id="badPhoto" class="photoBtn" title="Wrong building / bad photo">👎 Wrong</button><div id="dragHint">↔ Drag to look around</div><a id="svLink" target="_blank" rel="noopener">👀 Street View ↗</a></div>
+  <div id="photoBox"><div id="photoMap"></div><img id="photoImg" alt=""><div id="photoPano"></div><div class="photoTag" id="photoTag"><i class=ti-satellite></i> Aerial view</div><button id="nextPhoto" class="photoBtn"><i class=ti-refresh></i> Other photo</button><button id="badPhoto" class="photoBtn" title="Wrong building / bad photo"><i class=ti-thumb-down></i> Wrong</button><div id="dragHint"><i class=ti-arrows-horizontal></i> Drag to look around</div><a id="svLink" target="_blank" rel="noopener"><i class=ti-eye></i> Street View <i class=ti-external-link></i></a></div>
   <div id="sheetBody"></div></div>
 <div id="toast" class="ui"></div>
 
@@ -214,11 +222,11 @@
       <button class="btn" id="playBtn" disabled>Loading…</button>
       <div id="whoami"></div>
       <button class="btn" id="newBtn" style="display:none">Start a new game</button>
-      <button class="btn" id="newsBtn">✨ What's new</button>
-      <details id="how"><summary>❓ How to play</summary><ul>
-        <li><b>Walk</b> to real places. Tap the map to walk there, or turn on 🛰️ to use real GPS.</li>
+      <button class="btn" id="newsBtn"><i class=ti-sparkles></i> What's new</button>
+      <details id="how"><summary><i class=ti-help-circle></i> How to play</summary><ul>
+        <li><b>Walk</b> to real places. Tap the map to walk there, or turn on <i class=ti-satellite></i> to use real GPS.</li>
         <li>When a place is inside your blue circle, tap it and <b>send your troops</b> marching in to capture or attack it.</li>
-        <li>Places you own earn 🪙 coins. Spend them on troops and defenses.</li>
+        <li>Places you own earn <i class=ti-coin></i> coins. Spend them on troops and defenses.</li>
         <li>Real players all over Buckley want it too. Own <b>every place</b> to win the season — then the map resets and a new season starts.</li>
       </ul></details>
     </div>
@@ -264,6 +272,13 @@ async function rpc(fn,args){
   if(!r.ok){const code=(j&&j.message)||'server_error';const e=new Error(ERRORS[code]||'The game server had a problem. Try again.');e.code=code;throw e}
   return j;
 }
+const ic=n=>`<i class=ti-${n}></i>`;
+const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+// icon for each kind of place (replaces the old emojis)
+const KIND_ICON={'School':'school','City building':'building-community','Fire station':'firetruck','Police station':'shield-check','Library':'books','Post office':'mail',
+  'Community center':'users','Church':'building-church','Gas station':'gas-station','Bank':'building-bank','Health':'first-aid-kit','Fast food':'burger','Restaurant':'tools-kitchen-2',
+  'Café':'coffee','Store':'shopping-cart','Auto shop':'car','Hardware store':'hammer','Shop':'shopping-bag','Park':'trees','Sports':'ball-football','Attraction':'camera','Business':'building','Spot':'map-pin'};
+const kindIcon=k=>ic(KIND_ICON[k]||'map-pin');
 const auth=()=>({p_id:ME.id,p_secret:ME.secret});
 
 let S=null; // game state
@@ -275,7 +290,7 @@ const rand=(a,b)=>a+Math.random()*(b-a);
 function dist(a,b){const R=6371000,t=Math.PI/180;const dLat=(b.lat-a.lat)*t,dLng=(b.lng-a.lng)*t;
   const x=Math.sin(dLat/2)**2+Math.cos(a.lat*t)*Math.cos(b.lat*t)*Math.sin(dLng/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
 function fmtDist(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km'}
-function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),3200)}
+function toast(t){const el=$('toast');el.innerHTML=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),3200)}
 function colorOf(owner){return owner==null?NEUTRAL:(PL[owner]?PL[owner].color:'#555')}
 function nameOf(owner){return owner==null?'Nobody yet':(owner===ME?.id?'You':(PL[owner]?PL[owner].name:'Someone'))}
 const mine=p=>ME&&p.owner===ME.id;
@@ -285,30 +300,30 @@ function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({me:S.me}))}cat
 function classify(t){
   const a=t.amenity,s=t.shop,l=t.leisure;
   const K=(kind,emoji,income,def,prio)=>({kind,emoji,income,def,prio});
-  if(['school','college','university','kindergarten'].includes(a))return K('School','🏫',8,45,1);
-  if(a==='townhall'||a==='courthouse')return K('City building','🏛️',9,50,1);
-  if(a==='fire_station')return K('Fire station','🚒',7,45,1);
-  if(a==='police')return K('Police station','🚓',7,50,1);
-  if(a==='library')return K('Library','📚',6,35,1);
-  if(a==='post_office')return K('Post office','📮',5,30,2);
-  if(a==='community_centre'||a==='social_facility')return K('Community center','🏠',5,30,2);
-  if(a==='place_of_worship')return K('Church','⛪',4,25,3);
-  if(a==='fuel')return K('Gas station','⛽',6,30,2);
-  if(a==='bank')return K('Bank','🏦',8,40,2);
-  if(['pharmacy','doctors','clinic','dentist','hospital','veterinary'].includes(a))return K('Health','🏥',5,30,2);
-  if(a==='fast_food')return K('Fast food','🍔',5,25,2);
-  if(a==='restaurant')return K('Restaurant','🍽️',5,25,2);
-  if(a==='cafe'||a==='ice_cream')return K('Café','☕',4,20,2);
-  if(a==='pub'||a==='bar')return K('Restaurant','🍽️',4,20,3);
-  if(s==='supermarket'||s==='convenience')return K('Store','🛒',6,30,2);
-  if(s==='car_repair'||s==='car'||s==='tyres')return K('Auto shop','🔧',4,20,3);
-  if(s==='hardware'||s==='doityourself')return K('Hardware store','🔨',5,25,2);
-  if(s)return K('Shop','🛍️',3,15,3);
-  if(l==='park'||l==='playground'||l==='nature_reserve')return K('Park','🌳',2,12,3);
-  if(l)return K('Sports','🏟️',4,25,2);
-  if(t.tourism)return K('Attraction','📸',3,15,3);
-  if(a)return K('Business','🏢',3,15,4);
-  return K('Spot','📍',3,15,4);
+  if(['school','college','university','kindergarten'].includes(a))return K('School','<i class=ti-school></i>',8,45,1);
+  if(a==='townhall'||a==='courthouse')return K('City building','<i class=ti-building-community></i>',9,50,1);
+  if(a==='fire_station')return K('Fire station','<i class=ti-firetruck></i>',7,45,1);
+  if(a==='police')return K('Police station','<i class=ti-shield-check></i>',7,50,1);
+  if(a==='library')return K('Library','<i class=ti-books></i>',6,35,1);
+  if(a==='post_office')return K('Post office','<i class=ti-mail></i>',5,30,2);
+  if(a==='community_centre'||a==='social_facility')return K('Community center','<i class=ti-home></i>',5,30,2);
+  if(a==='place_of_worship')return K('Church','<i class=ti-building-church></i>',4,25,3);
+  if(a==='fuel')return K('Gas station','<i class=ti-gas-station></i>',6,30,2);
+  if(a==='bank')return K('Bank','<i class=ti-building-bank></i>',8,40,2);
+  if(['pharmacy','doctors','clinic','dentist','hospital','veterinary'].includes(a))return K('Health','<i class=ti-first-aid-kit></i>',5,30,2);
+  if(a==='fast_food')return K('Fast food','<i class=ti-burger></i>',5,25,2);
+  if(a==='restaurant')return K('Restaurant','<i class=ti-tools-kitchen-2></i>',5,25,2);
+  if(a==='cafe'||a==='ice_cream')return K('Café','<i class=ti-coffee></i>',4,20,2);
+  if(a==='pub'||a==='bar')return K('Restaurant','<i class=ti-tools-kitchen-2></i>',4,20,3);
+  if(s==='supermarket'||s==='convenience')return K('Store','<i class=ti-shopping-cart></i>',6,30,2);
+  if(s==='car_repair'||s==='car'||s==='tyres')return K('Auto shop','<i class=ti-car></i>',4,20,3);
+  if(s==='hardware'||s==='doityourself')return K('Hardware store','<i class=ti-hammer></i>',5,25,2);
+  if(s)return K('Shop','<i class=ti-shopping-bag></i>',3,15,3);
+  if(l==='park'||l==='playground'||l==='nature_reserve')return K('Park','<i class=ti-trees></i>',2,12,3);
+  if(l)return K('Sports','<i class=ti-ball-football></i>',4,25,2);
+  if(t.tourism)return K('Attraction','<i class=ti-camera></i>',3,15,3);
+  if(a)return K('Business','<i class=ti-building></i>',3,15,4);
+  return K('Spot','<i class=ti-map-pin></i>',3,15,4);
 }
 
 function photoTagOf(t){
@@ -353,7 +368,7 @@ async function fetchPlaces(){
   }catch(e){clearTimeout(tm)}
   // offline fallback: made-up spots around downtown
   const names=['Main St Diner','Corner Market','River Park','Foothills Gas','Town Hall','Buckley Bakery','Ball Field','Pizza Spot','Hardware Barn','Coffee Stand','Library','Old Church','Burger Shack','Auto Fix','Ice Cream Hut','Fire Station','Bank','Pet Clinic','Book Nook','Skate Park'];
-  const kinds=[['Restaurant','🍽️'],['Store','🛒'],['Park','🌳'],['Gas station','⛽'],['City building','🏛️'],['Café','☕'],['Sports','🏟️'],['Fast food','🍔'],['Hardware store','🔨'],['Café','☕'],['Library','📚'],['Church','⛪'],['Fast food','🍔'],['Auto shop','🔧'],['Café','☕'],['Fire station','🚒'],['Bank','🏦'],['Health','🏥'],['Shop','🛍️'],['Park','🌳']];
+  const kinds=[['Restaurant','<i class=ti-tools-kitchen-2></i>'],['Store','<i class=ti-shopping-cart></i>'],['Park','<i class=ti-trees></i>'],['Gas station','<i class=ti-gas-station></i>'],['City building','<i class=ti-building-community></i>'],['Café','<i class=ti-coffee></i>'],['Sports','<i class=ti-ball-football></i>'],['Fast food','<i class=ti-burger></i>'],['Hardware store','<i class=ti-hammer></i>'],['Café','<i class=ti-coffee></i>'],['Library','<i class=ti-books></i>'],['Church','<i class=ti-building-church></i>'],['Fast food','<i class=ti-burger></i>'],['Auto shop','<i class=ti-car></i>'],['Café','<i class=ti-coffee></i>'],['Fire station','<i class=ti-firetruck></i>'],['Bank','<i class=ti-building-bank></i>'],['Health','<i class=ti-first-aid-kit></i>'],['Shop','<i class=ti-shopping-bag></i>'],['Park','<i class=ti-trees></i>']];
   return {real:false,list:names.map((n,i)=>({name:n,lat:CENTER[0]+rand(-.009,.009),lng:CENTER[1]+rand(-.014,.014),kind:kinds[i][0],emoji:kinds[i][1],income:4,def:20,prio:2}))};
 }
 
@@ -380,14 +395,15 @@ function handleEvent(e){
   if(e.id<=lastEvent)return;
   const meId=ME&&ME.id;
   if(e.kind==='season'){
-    showMsg(`<h1>👑 Season over!</h1><p style="text-align:center">${e.text}</p><p style="text-align:center;color:#5f6368">${e.actor===meId?'That’s YOU — you’re in the Hall of Fame!':'Everyone starts fresh with 60🪙 and 20 crew. Go!'}</p><button class="btn primary" onclick="hideMsg()">Let’s go</button>`);
+    showMsg(`<h1><i class=ti-crown></i> Season over!</h1><p style="text-align:center">${esc(e.text)}</p><p style="text-align:center;color:#5f6368">${e.actor===meId?'That’s YOU — you’re in the Hall of Fame!':'Everyone starts fresh with 60<i class=ti-coin></i> and 20 crew. Go!'}</p><button class="btn primary" onclick="hideMsg()">Let’s go</button>`);
     return;
   }
   if(e.actor===meId)return; // your own moves already showed a result
-  if(e.kind==='capture'&&e.victim===meId)toast('🚨 '+e.text+'!');
-  else if(e.kind==='defend'&&e.victim===meId)toast('🛡️ '+e.text+'!');
-  else if(e.kind==='capture')toast(e.text);
-  else if(e.kind==='join')toast('👋 '+e.text);
+  const tx=esc(e.text);if(false)0;
+  if(e.kind==='capture'&&e.victim===meId)toast('<i class=ti-alert-triangle></i> '+tx+'!');
+  else if(e.kind==='defend'&&e.victim===meId)toast('<i class=ti-shield></i> '+tx+'!');
+  else if(e.kind==='capture')toast(tx);
+  else if(e.kind==='join')toast('<i class=ti-user-plus></i> '+tx);
 }
 async function poll(){
   try{
@@ -395,7 +411,7 @@ async function poll(){
     offlineShown=false;applyWorld(w,false);
   }catch(e){
     if(e.code==='not_logged_in'){toast('Your player login was lost — please join again.');try{localStorage.removeItem(ID_KEY)}catch(_){}setTimeout(()=>location.reload(),2500);return}
-    if(!offlineShown){offlineShown=true;toast('📶 Can’t reach the game server — retrying…')}
+    if(!offlineShown){offlineShown=true;toast('<i class=ti-wifi-off></i> Can’t reach the game server — retrying…')}
   }
 }
 
@@ -419,7 +435,7 @@ function initMap(){
   });
   map.on('click',e=>{
     closeSheet();
-    if(S.mode==='gps'){toast('GPS mode is on — walk for real! (tap 🛰️ to switch to walk mode)');return}
+    if(S.mode==='gps'){toast('GPS mode is on — walk for real! (tap <i class=ti-satellite></i> to switch to walk mode)');return}
     walkTo(e.latlng);
   });
   map.on('dragstart',()=>follow=false);
@@ -462,11 +478,27 @@ function tank(color,h){
 }
 function soldierRow(color,n,h){let s='';for(let i=0;i<n;i++)s+=soldier(color,h);return s}
 
+const pinPhoto={}; // place id -> {url, pano, signed}
+function pinFace(p){
+  const ph=pinPhoto[p.id];
+  if(!ph)return `<span>${kindIcon(p.kind)}</span>`;
+  let st=`background-image:url('${ph.url}')`;
+  if(ph.pano){const z=4.5,f=ph.signed/360+0.5,pos=Math.max(0,Math.min(100,(f*z-0.5)/(z-1)*100));st+=`;background-size:${z*100}% 100%;background-position:${pos}% 55%`}
+  return `<span>${kindIcon(p.kind)}</span><div class="ph" style="${st}"></div>`; // icon sits underneath in case the photo can't load
+}
+function setPinPhoto(p,c){if(!c||!(c.url256||c.small))return;pinPhoto[p.id]={url:c.url256||c.small,pano:c.pano,signed:c.signed||0};if(markers[p.id])markers[p.id].setIcon(pinIcon(p))}
+// quietly find a street photo for every place, nearest first, 2 at a time
+async function loadPinPhotos(){
+  const todo=S.places.slice().sort((a,b)=>dist(S.me,a)-dist(S.me,b));
+  const work=async()=>{while(todo.length){const p=todo.shift();if(pinPhoto[p.id])continue;
+    try{const list=await streetPhotos(p);if(!list.length)continue;const fav=favPhotos()[p.name];setPinPhoto(p,list.find(c=>c.id===fav)||list[0])}catch(e){}}};
+  await Promise.all([work(),work()]);
+}
 function pinIcon(p){
   const near=!mine(p)&&dist(S.me,p)<=RANGE;
   // owned places show their garrison: little army men + defense number
   const gar=p.owner?`<div class="gar">${soldierRow(colorOf(p.owner),Math.max(1,Math.min(3,Math.ceil(p.def/20))),14)}<span style="margin-left:2px">${Math.round(p.def)}</span></div>`:'';
-  return L.divIcon({className:'',html:`<div class="pinwrap"><div class="pin${near?' near':''}${mine(p)?' mine':''}" style="--c:${colorOf(p.owner)}"><span>${p.emoji}</span></div>${gar}</div>`,iconSize:[38,38],iconAnchor:[19,40]});
+  return L.divIcon({className:'',html:`<div class="pinwrap"><div class="pin${pinPhoto[p.id]?' photo':''}${near?' near':''}${mine(p)?' mine':''}" style="--c:${colorOf(p.owner)}">${pinFace(p)}</div>${gar}</div>`,iconSize:[38,38],iconAnchor:[19,40]});
 }
 function refreshPins(){S.places.forEach(p=>markers[p.id].setIcon(pinIcon(p)))}
 
@@ -528,7 +560,7 @@ function toggleGPS(){
   gpsWatch=navigator.geolocation.watchPosition(pos=>{
     const p={lat:pos.coords.latitude,lng:pos.coords.longitude};
     if(dist(p,{lat:CENTER[0],lng:CENTER[1]})>6000){toast("You're not in Buckley right now — staying in walk mode");stopGPS();return}
-    if(S.mode!=='gps'){S.mode='gps';updateHUD();toast('GPS on! Walk around Buckley for real 🛰️')}
+    if(S.mode!=='gps'){S.mode='gps';updateHUD();toast('GPS on! Walk around Buckley for real <i class=ti-satellite></i>')}
     if(pos.coords.heading!=null&&!isNaN(pos.coords.heading))setHeading(pos.coords.heading);
     else if(dist(S.me,p)>2)setHeading(bearing(S.me,p));
     S.me=p;walkPath=[];follow=true;moveMe();
@@ -546,7 +578,7 @@ function updateHUD(){
   $('progTxt').textContent=`Buckley: ${Math.round(myCount/total*100)}% yours`;
   const order=Object.keys(counts).sort((a,b)=>(b===ME.id)-(a===ME.id)||counts[b]-counts[a]);
   $('bar').innerHTML=order.map(id=>`<div style="width:${counts[id]/total*100}%;background:${colorOf(id)}"></div>`).join('');
-  $('modeChip').textContent=S.mode==='gps'?'🛰️ GPS mode':'🚶 Walk mode';
+  $('modeChip').innerHTML=S.mode==='gps'?'<i class=ti-satellite></i> GPS mode':'<i class=ti-walk></i> Walk mode';
   $('gpsBtn').classList.toggle('on',S.mode==='gps');
   $('recruit').disabled=S.coins<20;$('recruit').style.opacity=S.coins<20?.6:1;
 }
@@ -557,10 +589,10 @@ function setTanks(d){selTanks=Math.max(0,Math.min(S.tanks||0,selTanks+d));if($('
 function powerEst(){
   const el=$('powerEst');if(!el||selected==null)return;const p=S.places[selected];
   const tr=+($('sendRange')?$('sendRange').value:0),tk=Math.min(selTanks,S.tanks||0),pw=tr+tk*25;
-  el.innerHTML=`Your power ≈ <b>${pw}</b>${tk?` (${tr} troops + ${tk} tank${tk>1?'s':''} × 25)`:''} vs 🛡️ <b>${Math.round(p.def)}</b> · mini-game adds up to ×1.6`;
+  el.innerHTML=`Your power ≈ <b>${pw}</b>${tk?` (${tr} troops + ${tk} tank${tk>1?'s':''} × 25)`:''} vs <i class=ti-shield></i> <b>${Math.round(p.def)}</b> · mini-game adds up to ×1.6`;
 }
 async function buyTank(){
-  try{const r=await rpc('buy_tank',auth());S.coins=r.coins;S.crew=r.crew;S.tanks=r.tanks;updateHUD();toast('🛠️ Tank built! You have '+r.tanks);myArmy()}
+  try{const r=await rpc('buy_tank',auth());S.coins=r.coins;S.crew=r.crew;S.tanks=r.tanks;updateHUD();toast('<i class=ti-tool></i> Tank built! You have '+r.tanks);myArmy()}
   catch(e){toast(e.message)}
 }
 
@@ -571,7 +603,7 @@ function openPlace(id,quiet,force){
   const ownerName=nameOf(p.owner);
   let actions='';
   if(mine(p)){
-    actions=`<button class="btn primary" onclick="fortify(${id})" ${S.coins<30?'disabled':''}>🛡️ Fortify +10 defense · 30🪙</button>`;
+    actions=`<button class="btn primary" onclick="fortify(${id})" ${S.coins<30?'disabled':''}><i class=ti-shield></i> Fortify +10 defense · 30<i class=ti-coin></i></button>`;
   }else if(!inRange){
     actions=`<div class="sub" style="margin:4px 0 0">Your troops can only march ${RANGE} m — get ${fmtDist(d-RANGE)} closer</div>`;
   }else{
@@ -585,19 +617,19 @@ function openPlace(id,quiet,force){
         <span id="tankPick" style="display:flex;align-items:center;gap:6px;font-weight:800">${tank(ME.color,22)} × <b id="tankN">${Math.min(selTanks,S.tanks)}</b> of ${S.tanks}</span>
         <button class="btn ghost" style="width:46px;margin:0;padding:8px" onclick="setTanks(1)">+</button></div>`:''}
       <div id="powerEst" style="text-align:center;font-size:13px;color:#5f6368;margin-top:4px"></div>
-      <button class="btn ${p.owner==null?'primary':'danger'}" onclick="startBattle(${id})" ${S.crew<1?'disabled':''}>${p.owner==null?'🪖 Send troops to capture':'🪖 Send troops to attack '+nameOf(p.owner)}</button>`;
+      <button class="btn ${p.owner==null?'primary':'danger'}" onclick="startBattle(${id})" ${S.crew<1?'disabled':''}>${p.owner==null?'<i class=ti-users-group></i> Send troops to capture':'<i class=ti-users-group></i> Send troops to attack '+nameOf(p.owner)}</button>`;
   }
   setTimeout(powerEst,0);
   if(quiet&&!force&&$('sendRange')&&inRange&&!mine(p)){ // don't rebuild slider while dragging
     return;
   }
   $('sheetBody').innerHTML=`
-    <h2>${p.emoji} ${p.name}</h2>
+    <h2>${kindIcon(p.kind)} ${esc(p.name)}</h2>
     <div class="sub">${p.kind} · ${fmtDist(d)} away</div>
     <div class="row">
       <div class="stat"><b style="color:${colorOf(p.owner)}">●</b>${ownerName}</div>
-      <div class="stat"><b>🛡️ ${Math.round(p.def)}</b>defense</div>
-      <div class="stat"><b>🪙 ${p.income}</b>per 10 min</div>
+      <div class="stat"><b><i class=ti-shield></i> ${Math.round(p.def)}</b>defense</div>
+      <div class="stat"><b><i class=ti-coin></i> ${p.income}</b>per 10 min</div>
     </div>${mine(p)||!inRange?routeBox(id):''}${actions}
     <button class="btn ghost" onclick="closeSheet()">Close</button>`;
   $('sheet').classList.add('open');
@@ -629,7 +661,7 @@ async function streetPhotos(p){
   try{
     for(const r of [0.0007,0.0016]){ // ~55 m, then ~125 m around the building
       const bbox=[p.lng-r*1.5,p.lat-r,p.lng+r*1.5,p.lat+r].join(',');
-      const res=await fetch(`https://graph.mapillary.com/images?access_token=${encodeURIComponent(MAPILLARY_TOKEN)}&fields=id,thumb_1024_url,thumb_2048_url,compass_angle,computed_compass_angle,computed_geometry,geometry,captured_at,is_pano,camera_type&bbox=${bbox}&limit=100`);
+      const res=await fetch(`https://graph.mapillary.com/images?access_token=${encodeURIComponent(MAPILLARY_TOKEN)}&fields=id,thumb_256_url,thumb_1024_url,thumb_2048_url,compass_angle,computed_compass_angle,computed_geometry,geometry,captured_at,is_pano,camera_type&bbox=${bbox}&limit=100`);
       const j=await res.json();
       for(const im of (j.data||[])){
         const g=(im.computed_geometry||im.geometry);if(!g||!im.thumb_1024_url)continue;
@@ -642,7 +674,7 @@ async function streetPhotos(p){
         if(pano)score=Math.abs(d-28)*1.1+12;                 // 360°: we aim it ourselves
         else{if(Math.abs(signed)>25)continue;score=Math.abs(signed)*1.8+Math.abs(d-30)*0.9}
         score-=(im.captured_at||0)/3.15e10*2; // newer is a bit better
-        list.push({id:im.id,score,pano,signed,d,when:im.captured_at,url:(pano&&im.thumb_2048_url)||im.thumb_1024_url});
+        list.push({id:im.id,score,pano,signed,d,when:im.captured_at,url256:im.thumb_256_url,url:(pano&&im.thumb_2048_url)||im.thumb_1024_url});
       }
       if(list.length>=3)break;
     }
@@ -657,12 +689,12 @@ async function streetPhotos(p){
 let cands=[],candI=0,panoX=0,panoBW=0;
 function badPhotos(){try{return new Set(JSON.parse(localStorage.getItem('buckleyBadPhotos')||'[]'))}catch(e){return new Set()}}
 function favPhotos(){try{return JSON.parse(localStorage.getItem('buckleyFavPhotos')||'{}')}catch(e){return {}}}
-function saveFav(p){const c=cands[candI];if(!c||!c.id)return;const f=favPhotos();f[p.name]=c.id;try{localStorage.setItem('buckleyFavPhotos',JSON.stringify(f))}catch(e){}}
+function saveFav(p){const c=cands[candI];if(c&&c.url256)setPinPhoto(p,c);if(!c||!c.id)return;const f=favPhotos();f[p.name]=c.id;try{localStorage.setItem('buckleyFavPhotos',JSON.stringify(f))}catch(e){}}
 function showPhoto(on){
   showingPhoto=on;const img=$('photoImg'),pano=img.dataset.pano==='1';
   img.style.display=on&&!pano?'block':'none';$('photoPano').style.display=on&&pano?'block':'none';
-  const lbl=img.dataset.label||'📷 Photo';
-  $('photoTag').textContent=on?lbl+' · tap for aerial':(img.dataset.ok?'🛰️ Aerial · tap for photo':'🛰️ Aerial view');
+  const lbl=img.dataset.label||'<i class=ti-camera></i> Photo';
+  $('photoTag').innerHTML=on?lbl+' · tap for aerial':(img.dataset.ok?'<i class=ti-satellite></i> Aerial · tap for photo':'<i class=ti-satellite></i> Aerial view');
   $('nextPhoto').style.display=on&&cands.length>1?'block':'none';$('badPhoto').style.display=on?'block':'none';
   $('dragHint').style.display=on&&pano?'block':'none';
 }
@@ -671,7 +703,7 @@ $('nextPhoto').onclick=()=>{if(cands.length>1){candI=(candI+1)%cands.length;cons
 $('badPhoto').onclick=()=>{
   const c=cands[candI],p=S.places[photoFor];if(!c)return;
   if(c.id){const b=badPhotos();b.add(c.id);try{localStorage.setItem('buckleyBadPhotos',JSON.stringify([...b]))}catch(e){}}
-  cands.splice(candI,1);toast('👍 Got it — that photo won’t show again');
+  cands.splice(candI,1);toast('<i class=ti-thumb-up></i> Got it — that photo won’t show again');
   if(!cands.length){const img=$('photoImg');delete img.dataset.ok;showPhoto(false);return}
   candI%=cands.length;saveFav(p);showCand(p);
 };
@@ -686,7 +718,7 @@ function showCand(p){
   const c=cands[candI],img=$('photoImg');if(!c)return;
   img.onload=()=>{
     if(photoFor!==p.id||cands[candI]!==c)return;
-    img.dataset.ok=1;img.dataset.label='📷 '+(candI+1)+'/'+cands.length+(c.when?' · '+new Date(c.when).getFullYear():'');
+    img.dataset.ok=1;img.dataset.label='<i class=ti-camera></i> '+(candI+1)+'/'+cands.length+(c.when?' · '+new Date(c.when).getFullYear():'');
     if(c.pano){ // ~75° slice of the 360° photo centred on the building
       img.dataset.pano='1';const W=$('photoBox').clientWidth,el=$('photoPano');
       const fov=Math.max(40,Math.min(85,2*Math.atan(22/c.d)*180/Math.PI));panoBW=W*360/fov;el.style.backgroundImage=`url("${c.url}")`;el.style.backgroundSize=`${panoBW}px ${panoBW/2}px`;
@@ -756,12 +788,12 @@ function updateRoute(){
   // drop route points we've already passed
   while(R.path.length>1&&(dist(S.me,R.path[0])<15||dist(S.me,R.path[1])<dist(R.path[0],R.path[1])))R.path.shift();
   const p=S.places[R.id];
-  if(dist(S.me,p)<=RANGE){toast('📍 You made it to '+p.name+'!');clearRoute();if(selected===p.id)openPlace(p.id,true,true);return}
+  if(dist(S.me,p)<=RANGE){toast('<i class=ti-map-pin></i> You made it to '+p.name+'!');clearRoute();if(selected===p.id)openPlace(p.id,true,true);return}
   drawRoute();
   let left=dist(S.me,R.path[0]);for(let i=1;i<R.path.length;i++)left+=dist(R.path[i-1],R.path[i]);
   R.dist=left;R.mins=Math.max(1,Math.round(left/1.35/60));
   const chip=$('routeChip');
-  if(selected==null){chip.style.display='block';chip.textContent=`🧭 ${p.name} · ${R.mins} min · ${fmtDist(left)}   ✕`}
+  if(selected==null){chip.style.display='block';chip.innerHTML=`<i class=ti-compass></i> ${p.name} · ${R.mins} min · ${fmtDist(left)} <i class=ti-x></i>`}
   else chip.style.display='none';
 }
 function followRoute(){if(!R||!R.path)return;walkReq++;walkPath=R.path.map(q=>({...q}));follow=true;closeSheet();map.setView([S.me.lat,S.me.lng],18)}
@@ -771,36 +803,28 @@ function clearRoute(quiet){
 }
 $('routeChip').onclick=()=>clearRoute();
 function routeBox(id){
-  if(!R||R.id!==id)return `<button class="btn ghost" onclick="directions(${id})">🧭 Directions</button>`;
-  if(R.loading)return `<div class="route">🧭 Finding the best walking route…</div>`;
+  if(!R||R.id!==id)return `<button class="btn ghost" onclick="directions(${id})"><i class=ti-compass></i> Directions</button>`;
+  if(R.loading)return `<div class="route"><i class=ti-compass></i> Finding the best walking route…</div>`;
   const p=S.places[id];
   const g=`https://www.google.com/maps/dir/?api=1&origin=${S.me.lat},${S.me.lng}&destination=${p.lat},${p.lng}&travelmode=walking`;
-  return `<div class="route"><b>🚶 ${R.mins} min</b> &nbsp;${fmtDist(R.dist)} walk${R.real?'':' (straight line — no route found)'}
-    <div style="margin-top:6px"><a href="${g}" target="_blank" rel="noopener">Open in Google Maps ↗</a></div></div>
-    ${S.mode==='gps'?'':`<button class="btn primary" onclick="followRoute()">▶ Walk this route</button>`}
-    <button class="btn ghost" onclick="clearRoute();openPlace(${id},true,true)">✕ Clear route</button>`;
+  return `<div class="route"><b><i class=ti-walk></i> ${R.mins} min</b> &nbsp;${fmtDist(R.dist)} walk${R.real?'':' (straight line — no route found)'}
+    <div style="margin-top:6px"><a href="${g}" target="_blank" rel="noopener">Open in Google Maps <i class=ti-external-link></i></a></div></div>
+    ${S.mode==='gps'?'':`<button class="btn primary" onclick="followRoute()"><i class=ti-player-play></i> Walk this route</button>`}
+    <button class="btn ghost" onclick="clearRoute();openPlace(${id},true,true)"><i class=ti-x></i> Clear route</button>`;
 }
 
 function closeSheet(){$('sheet').classList.remove('open');selected=null;photoFor=null;updateRoute()}
 function goTo(id){const p=S.places[id];if(S.mode==='gps'){toast('Walk there for real! It\'s '+fmtDist(dist(S.me,p))+' away');return}walkTo({lat:p.lat,lng:p.lng});closeSheet()}
 async function fortify(id){
   const p=S.places[id];
-  try{const r=await rpc('fortify',{...auth(),p_place:p.sid});S.coins=r.coins;S.crew=r.crew;p.def=r.def;p.maxDef=+r.max_def;toast('🛡️ '+p.name+' is stronger!');updateHUD();openPlace(id,true,true)}
+  try{const r=await rpc('fortify',{...auth(),p_place:p.sid});S.coins=r.coins;S.crew=r.crew;p.def=r.def;p.maxDef=+r.max_def;toast('<i class=ti-shield></i> '+p.name+' is stronger!');updateHUD();openPlace(id,true,true)}
   catch(e){toast(e.message)}
 }
 
 // ---------- capture mini-games ----------
 // Every game runs ~10 seconds on a canvas and ends with a score from 0 to 1.
 // The score becomes your crew's power boost (up to x1.6) — the server does the actual fight.
-const MG={
-  throw:{icon:'🎯',title:'Timing throw',hint:'Tap when the white ring is inside the green zone. 3 throws!'},
-  pump:{icon:'⛽',title:'Fill ’er up',hint:'Tap to stop the pump right on the red line. 3 tanks!'},
-  burger:{icon:'🍔',title:'Burger stack',hint:'Tap to drop each piece right on top of the stack!'},
-  cafe:{icon:'☕',title:'Rush hour orders',hint:'Tap the ingredients in each customer’s order. Hurry!'},
-  safe:{icon:'🏦',title:'Crack the safe',hint:'Remember the code, then punch it in. 2 safes!'},
-  quiz:{icon:'🏫',title:'Pop quiz',hint:'Answer fast — quicker answers hit harder!'},
-  leaves:{icon:'🍂',title:'Leaf catcher',hint:'Drag the basket to catch falling leaves!'}
-};
+const MG={};
 function gameFor(p){ // spread evenly over Buckley's places (about 10-16 each)
   const k=p.kind;
   if(['School','Fire station','Police station','Bank','Library','Church','City building'].includes(k))return 'artillery'; // landmarks
@@ -818,7 +842,7 @@ function runMiniGame(key,place,done){
   const api={W,H,ctx,place,
     pop(text,x,y,color){pops.push({text,x,y,color:color||'#fff',t:0})},
     end(score){if(g.over)return;g.over=true;setTimeout(()=>{stop();done(Math.max(0,Math.min(1,score)))},900)},
-    status(t){$('bTimer').textContent=t}};
+    status(t){$('bTimer').innerHTML=t}};
   const g=GAMES[key](api);g.over=false;
   let last=performance.now(),raf;
   function loop(){
@@ -848,152 +872,7 @@ function label(q){return q>.9?['PERFECT!','#fbbc04']:q>.7?['GREAT!','#34a853']:q
 function btn(c,x,y,w,h,text,fill,size){c.fillStyle=fill||'rgba(255,255,255,.12)';roundRect(c,x,y,w,h,14);c.fill();c.fillStyle='#fff';c.font='800 '+(size||22)+'px system-ui,sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(text,x+w/2,y+h/2+1);c.textBaseline='alphabetic'}
 function inBox(x,y,b){return x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h}
 
-const GAMES={
-  // 1) TIMING THROW — shrinking ring, tap in the green zone
-  throw(api){
-    const {W,H}=api,cx=W/2,cy=H*0.45,T=52,band=9;let t=0,n=0,scores=[],fly=null;
-    api.status('Throws left: 3');
-    return{
-      update(dt){t+=dt;if(fly){fly.t+=dt*3;if(fly.t>=1){
-        const q=fly.q;scores.push(q);const [l,col]=label(q);api.pop(l,cx,cy-90,col);fly=null;n++;
-        api.status('Throws left: '+(3-n));if(n>=3)api.end(scores.reduce((a,b)=>a+b,0)/3)}}},
-      ringR(){const speed=0.85+n*0.25;return 28+135*(1-((t*speed)%1))},
-      tap(){if(fly||n>=3)return;const r=this.ringR();const q=Math.max(0,1-Math.max(0,Math.abs(r-T)-band*0.4)/42);fly={t:0,q}},
-      draw(c){
-        c.fillStyle='rgba(52,168,83,.28)';c.beginPath();c.arc(cx,cy,T+band,0,Math.PI*2);c.moveTo(cx+T-band,cy);c.arc(cx,cy,T-band,0,Math.PI*2,true);c.fill();
-        c.strokeStyle='#34a853';c.lineWidth=3;c.beginPath();c.arc(cx,cy,T+band,0,7);c.stroke();c.beginPath();c.arc(cx,cy,T-band,0,7);c.stroke();
-        emoji(c,api.place.emoji,cx,cy,54);
-        if(n<3&&!fly){const r=this.ringR(),good=Math.abs(r-T)<band;c.strokeStyle=good?'#fbbc04':'#fff';c.lineWidth=5;c.beginPath();c.arc(cx,cy,r,0,7);c.stroke()}
-        if(fly){const y=H-60+(cy-(H-60))*fly.t,s=1-fly.t*0.5;c.fillStyle='#fbbc04';c.beginPath();c.arc(cx,y,18*s,0,7);c.fill();c.fillStyle='#fff';c.beginPath();c.arc(cx-5*s,y-5*s,5*s,0,7);c.fill()}
-        else if(n<3){c.fillStyle='#fbbc04';c.beginPath();c.arc(cx,H-60,18,0,7);c.fill();c.fillStyle='#fff';c.beginPath();c.arc(cx-5,H-65,5,0,7);c.fill()}
-        for(let i=0;i<3;i++){c.fillStyle=i<n?(scores[i]>.7?'#34a853':scores[i]>0?'#8ab4f8':'#ea4335'):'rgba(255,255,255,.25)';c.beginPath();c.arc(cx-30+i*30,H-18,8,0,7);c.fill()}
-      }};
-  },
-  // 2) GAS PUMP — stop the fuel on the red line
-  pump(api){
-    const {W,H}=api;let round=0,level=0,target=.62+Math.random()*.2,stopped=false,wait=0,scores=[];
-    const speeds=[.42,.58,.75],tank={x:W/2-55,y:70,w:110,h:H-150};
-    api.status('Tank 1 of 3');
-    return{
-      update(dt){
-        if(stopped){wait+=dt;if(wait>.8){round++;if(round>=3){api.end(scores.reduce((a,b)=>a+b,0)/3);return}
-          level=0;target=.55+Math.random()*.3;stopped=false;wait=0;api.status('Tank '+(round+1)+' of 3')}return}
-        if(round>=3)return;level+=speeds[round]*dt;
-        if(level>=1){level=1;this.score(0,'OVERFLOW!')}
-      },
-      score(q,txt){stopped=true;scores.push(q);const [l,col]=label(q);api.pop(txt||l,W/2,tank.y-10,txt?'#ea4335':col)},
-      tap(){if(stopped||round>=3)return;const d=Math.abs(level-target);this.score(Math.max(0,1-d*7))},
-      draw(c){
-        c.fillStyle='#d93025';roundRect(c,tank.x-24,tank.y-34,tank.w+48,tank.h+70,18);c.fill();
-        c.fillStyle='#fff';c.font='900 15px system-ui';c.textAlign='center';c.fillText('FUEL',W/2,tank.y-12);
-        c.fillStyle='#1b1b1b';roundRect(c,tank.x,tank.y,tank.w,tank.h,10);c.fill();
-        const fh=tank.h*level;const gr=c.createLinearGradient(0,tank.y+tank.h-fh,0,tank.y+tank.h);gr.addColorStop(0,'#ffd23f');gr.addColorStop(1,'#f29900');
-        c.fillStyle=gr;roundRect(c,tank.x+4,tank.y+tank.h-fh+(fh>8?0:0),tank.w-8,Math.max(0,fh-4),8);c.fill();
-        const ty=tank.y+tank.h*(1-target);c.strokeStyle='#ff5252';c.lineWidth=4;c.setLineDash([10,6]);c.beginPath();c.moveTo(tank.x-14,ty);c.lineTo(tank.x+tank.w+14,ty);c.stroke();c.setLineDash([]);
-        c.fillStyle='#ff5252';c.font='800 13px system-ui';c.textAlign='left';c.fillText('STOP',tank.x+tank.w+18,ty+5);
-        c.fillStyle='#0f0';c.font='700 18px ui-monospace,monospace';c.textAlign='center';c.fillText((level*15).toFixed(2)+' gal',W/2,tank.y+tank.h+26);
-        if(!stopped&&round<3){c.fillStyle='rgba(255,255,255,.85)';c.font='800 16px system-ui';c.fillText('TAP TO STOP',W/2,H-10)}
-      }};
-  },
-  // 3) BURGER STACK — drop swinging pieces onto the stack
-  burger(api){
-    const {W,H}=api;const pieces=[['Patty','#6d3b1f',16],['Cheese','#fbbc04',8],['Lettuce','#34a853',8],['Tomato','#e53935',9],['Patty','#6d3b1f',16],['Top bun','#d9902f',24]];
-    const base={x:W/2,w:150,h:20};let stack=[{x:W/2,w:150,h:20,col:'#d9902f',bun:true}],i=0,t=0,fall=null,scores=[];
-    const topY=()=>H-40-stack.reduce((a,s)=>a+s.h,0);
-    api.status('Pieces left: 6');
-    return{
-      update(dt){t+=dt;if(fall){fall.y+=dt*900;const ty=topY()-fall.h;if(fall.y>=ty){
-          const below=stack[stack.length-1],off=Math.abs(fall.x-below.x),q=Math.max(0,1-off/(below.w*0.75));
-          if(q>0){stack.push({x:fall.x,w:fall.w,h:fall.h,col:fall.col,bun:fall.bun});}
-          scores.push(q);const [l,col]=label(q);api.pop(q>0?l:'SPLAT!',W/2,topY()-30,q>0?col:'#ea4335');fall=null;i++;
-          api.status('Pieces left: '+(6-i));if(i>=6)api.end(scores.reduce((a,b)=>a+b,0)/6)}}},
-      swingX(){return W/2+Math.sin(t*(2.2+i*0.35))*(W/2-80)},
-      tap(){if(fall||i>=6)return;const [n,col,h]=pieces[i];fall={x:this.swingX(),y:50,w:base.w,h,col,bun:n==='Top bun'}},
-      draw(c){
-        c.fillStyle='#ccc';roundRect(c,W/2-110,H-36,220,10,5);c.fill();
-        let y=H-40;stack.forEach(s=>{y-=s.h;this.piece(c,s.x,y,s.w,s.h,s.col,s.bun)});
-        if(fall)this.piece(c,fall.x,fall.y,fall.w,fall.h,fall.col,fall.bun);
-        else if(i<6){const [n,col,h]=pieces[i];this.piece(c,this.swingX(),50,base.w,h,col,n==='Top bun');c.fillStyle='rgba(255,255,255,.8)';c.font='700 13px system-ui';c.textAlign='center';c.fillText(n,this.swingX(),40)}
-      },
-      piece(c,x,y,w,h,col,bun){c.fillStyle=col;roundRect(c,x-w/2,y,w,h,bun?h/2:5);c.fill();
-        if(bun&&h>20){c.fillStyle='#fff8';for(let k=0;k<5;k++){c.beginPath();c.ellipse(x-45+k*22,y+7,3,1.6,0,0,7);c.fill()}}}
-    };
-  },
-  // 4) CAFE ORDERS — tap the right ingredients
-  cafe(api){
-    const {W,H}=api;const items=['☕','🥛','🧊','🍫','🍯','🍓'];let time=12,orders=[],o=0,step=0,miss=0,shake=0;
-    for(let k=0;k<3;k++){const n=2+(k>0?1:0),ord=[];while(ord.length<n){const it=items[Math.floor(Math.random()*6)];if(!ord.includes(it))ord.push(it)}orders.push(ord)}
-    const bw=(W-60)/3,boxes=items.map((e,k)=>({e,x:20+(k%3)*(bw+10),y:H-150+Math.floor(k/3)*72,w:bw,h:62}));
-    return{
-      update(dt){if(o>=3)return;time-=dt;shake=Math.max(0,shake-dt);api.status('⏱️ '+Math.max(0,time).toFixed(1)+'s · Order '+(o+1)+' of 3');
-        if(time<=0)api.end((o+step/orders[Math.min(o,2)].length-miss*0.25)/3)},
-      tap(x,y){if(o>=3||time<=0)return;const b=boxes.find(b=>inBox(x,y,b));if(!b)return;popSound();
-        if(b.e===orders[o][step]){step++;if(step>=orders[o].length){api.pop('ORDER UP!',W/2,130,'#34a853');o++;step=0;if(o>=3)api.end((3-miss*0.25)/3*Math.min(1,0.75+time/24))}}
-        else{miss++;shake=.3;api.pop('Oops!',W/2,130,'#ea4335')}},
-      draw(c){
-        const sx=shake?Math.sin(shake*60)*6:0;
-        emoji(c,['🧑','👩','🧔'][Math.min(o,2)],W/2-80+sx,90,58);
-        c.fillStyle='#fff';roundRect(c,W/2-30+sx,46,150,84,16);c.fill();
-        if(o<3){const ord=orders[o];ord.forEach((e,k)=>{c.globalAlpha=k<step?.3:1;emoji(c,e,W/2+5+k*42+sx,88,32);c.globalAlpha=1;if(k<step){c.fillStyle='#34a853';c.font='900 22px system-ui';c.fillText('✓',W/2+5+k*42+sx,96)}})}
-        else{c.fillStyle='#34a853';c.font='900 20px system-ui';c.textAlign='center';c.fillText('All served!',W/2+45,95)}
-        boxes.forEach(b=>{c.fillStyle='rgba(255,255,255,.14)';roundRect(c,b.x,b.y,b.w,b.h,14);c.fill();emoji(c,b.e,b.x+b.w/2,b.y+b.h/2+2,34)});
-      }};
-  },
-  // 5) SAFE CRACKER — memorize the code
-  safe(api){
-    const {W,H}=api;let codes=[0,1].map(()=>Array.from({length:4},()=>Math.floor(Math.random()*10))),k=0,show=2.2,entry=[],scores=[],wait=0;
-    const kw=(W-80)/3,keys=[1,2,3,4,5,6,7,8,9,null,0,null].map((d,i)=>d==null?null:{d,x:30+(i%3)*(kw+10),y:H-238+Math.floor(i/3)*56,w:kw,h:48}).filter(Boolean);
-    api.status('Safe 1 of 2 — memorize!');
-    return{
-      update(dt){if(k>=2)return;if(show>0){show-=dt;if(show<=0)api.status('Safe '+(k+1)+' of 2 — enter the code')}
-        if(wait>0){wait-=dt;if(wait<=0){k++;entry=[];if(k>=2){api.end((scores[0]+scores[1])/2);return}show=2;api.status('Safe 2 of 2 — memorize!')}}},
-      tap(x,y){if(k>=2||show>0||wait>0)return;const b=keys.find(b=>inBox(x,y,b));if(!b)return;popSound();entry.push(b.d);
-        if(entry.length===4){const right=entry.filter((d,i)=>d===codes[k][i]).length;const q=right/4;scores.push(q);
-          api.pop(q===1?'CRACKED!':right+'/4 right',W/2,60,q===1?'#fbbc04':'#8ab4f8');wait=.8}},
-      draw(c){
-        c.fillStyle='#5f6b7a';roundRect(c,W/2-120,22,240,70,14);c.fill();c.fillStyle='#2b333d';roundRect(c,W/2-110,32,220,50,10);c.fill();
-        const shown=show>0?codes[Math.min(k,1)]:entry;
-        for(let i=0;i<4;i++){c.fillStyle=show>0?'#0f0':'#fbbc04';c.font='900 34px ui-monospace,monospace';c.textAlign='center';
-          c.fillText(shown[i]!=null?shown[i]:'_',W/2-75+i*50,70)}
-        if(show>0){c.fillStyle='rgba(255,255,255,.8)';c.font='700 14px system-ui';c.fillText('Memorize: '+show.toFixed(1)+'s',W/2,112)}
-        else emoji(c,'🔒',W/2,118,30);
-        keys.forEach(b=>btn(c,b.x,b.y,b.w,b.h,String(b.d),show>0?'rgba(255,255,255,.06)':'rgba(255,255,255,.15)',24));
-      }};
-  },
-  // 6) POP QUIZ — fast math
-  quiz(api){
-    const {W,H}=api;const qs=[];for(let k=0;k<3;k++){const ops=[()=>{const a=2+Math.floor(Math.random()*8),b=2+Math.floor(Math.random()*8);return[a+' × '+b,a*b]},()=>{const a=10+Math.floor(Math.random()*40),b=5+Math.floor(Math.random()*40);return[a+' + '+b,a+b]},()=>{const a=30+Math.floor(Math.random()*60),b=5+Math.floor(Math.random()*25);return[a+' − '+b,a-b]}];
-      const [txt,ans]=ops[k%3]();const opts=new Set([ans]);while(opts.size<4){const d=ans+(Math.floor(Math.random()*11)-5);if(d!==ans&&d>=0)opts.add(d)}
-      qs.push({txt,ans,opts:[...opts].sort(()=>Math.random()-.5)})}
-    let q=0,left=5,scores=[],wait=0;const bw=(W-50)/2;
-    const boxes=()=>qs[Math.min(q,2)].opts.map((v,i)=>({v,x:20+(i%2)*(bw+10),y:H-170+Math.floor(i/2)*80,w:bw,h:68}));
-    return{
-      update(dt){if(q>=3)return;if(wait>0){wait-=dt;if(wait<=0){q++;left=5;if(q>=3)api.end(scores.reduce((a,b)=>a+b,0)/3)}return}
-        left-=dt;api.status('Question '+(q+1)+' of 3');if(left<=0){scores.push(0);api.pop('TIME!',W/2,170,'#ea4335');wait=.6}},
-      tap(x,y){if(q>=3||wait>0)return;const b=boxes().find(b=>inBox(x,y,b));if(!b)return;popSound();
-        const ok=b.v===qs[q].ans,s=ok?0.55+0.45*left/5:0;scores.push(s);api.pop(ok?label(s)[0]:'NOPE',W/2,170,ok?label(s)[1]:'#ea4335');wait=.6},
-      draw(c){if(q>=3)return;
-        c.fillStyle='#1e4620';roundRect(c,24,30,W-48,120,12);c.fill();c.strokeStyle='#8d6e63';c.lineWidth=8;roundRect(c,24,30,W-48,120,12);c.stroke();
-        c.fillStyle='#fff';c.font='800 40px "Comic Sans MS",system-ui';c.textAlign='center';c.fillText(qs[q].txt+' = ?',W/2,105);
-        c.fillStyle='rgba(255,255,255,.2)';roundRect(c,30,H-206,W-60,10,5);c.fill();c.fillStyle=left>1.5?'#fbbc04':'#ea4335';roundRect(c,30,H-206,(W-60)*Math.max(0,left)/5,10,5);c.fill();
-        boxes().forEach(b=>btn(c,b.x,b.y,b.w,b.h,String(b.v),'rgba(255,255,255,.15)',30));
-      }};
-  },
-  // 7) LEAF CATCHER — drag the basket
-  leaves(api){
-    const {W,H}=api;let time=10,bx=W/2,leaves=[],spawn=0,caught=0,total=0;
-    return{
-      update(dt){if(time<=0)return;time-=dt;api.status('⏱️ '+Math.max(0,time).toFixed(1)+'s · Caught '+caught);
-        spawn-=dt;if(spawn<=0&&time>0.8){spawn=.55-Math.min(.25,(10-time)*.03);total++;leaves.push({x:30+Math.random()*(W-60),y:-20,v:120+Math.random()*90+(10-time)*12,w:Math.random()*6,e:Math.random()<.5?'🍂':'🍁'})}
-        for(let i=leaves.length-1;i>=0;i--){const l=leaves[i];l.y+=l.v*dt;l.x+=Math.sin(l.y/30+l.w)*40*dt;
-          if(l.y>H-70&&l.y<H-30&&Math.abs(l.x-bx)<46){caught++;api.pop('+1',l.x,H-80,'#34a853');leaves.splice(i,1)}else if(l.y>H+20)leaves.splice(i,1)}
-        if(time<=0)api.end(total?Math.min(1,caught/(total*0.8)):0)},
-      move(x){bx=Math.max(40,Math.min(W-40,x))},
-      draw(c){emoji(c,'🌳',50,60,60);emoji(c,'🌳',W-50,70,52);leaves.forEach(l=>emoji(c,l.e,l.x,l.y,30));emoji(c,'🧺',bx,H-50,56);
-        if(time>8.6){c.fillStyle='rgba(255,255,255,.8)';c.font='800 15px system-ui';c.textAlign='center';c.fillText('← drag the basket →',W/2,H-10)}}
-    };
-  }
-};
+const GAMES={};
 
 // ---------- realistic art helpers for the army mini-games ----------
 const ART={};
@@ -1027,6 +906,16 @@ function grit(c,W,H){
   c.fillStyle='rgba(40,50,45,.12)';c.fillRect(0,0,W,H);
   if(!ART.grain)ART.grain=patternCanvas(96,96,(g,w,h)=>{for(let i=0;i<1400;i++){g.fillStyle=`rgba(${Math.random()<.5?0:255},${Math.random()<.5?0:255},${Math.random()<.5?0:255},${Math.random()*.06})`;g.fillRect(Math.random()*w,Math.random()*h,1,1)}});
   c.fillStyle=c.createPattern(ART.grain,'repeat');c.fillRect(0,0,W,H);
+}
+function drawCat(c,x,y){ // orange tabby peeking out of the window
+  c.fillStyle='#e08a3c';c.beginPath();c.ellipse(x,y+16,17,13,0,0,7);c.fill();
+  c.beginPath();c.arc(x,y,13,0,7);c.fill();
+  c.beginPath();c.moveTo(x-12,y-5);c.lineTo(x-9,y-19);c.lineTo(x-2,y-10);c.fill();c.beginPath();c.moveTo(x+12,y-5);c.lineTo(x+9,y-19);c.lineTo(x+2,y-10);c.fill();
+  c.strokeStyle='#a85d1e';c.lineWidth=2;[-6,0,6].forEach(dx=>{c.beginPath();c.moveTo(x+dx,y-12);c.lineTo(x+dx,y-7);c.stroke()});
+  c.fillStyle='#c5e1a5';c.beginPath();c.ellipse(x-5,y-1,2.6,3.2,0,0,7);c.ellipse(x+5,y-1,2.6,3.2,0,0,7);c.fill();
+  c.fillStyle='#111';c.fillRect(x-5.5,y-3.5,1.1,5);c.fillRect(x+4.5,y-3.5,1.1,5);
+  c.fillStyle='#f48fb1';c.beginPath();c.moveTo(x-2,y+4);c.lineTo(x+2,y+4);c.lineTo(x,y+6);c.fill();
+  c.strokeStyle='rgba(255,255,255,.8)';c.lineWidth=.8;[[-1,-14],[1,14]].forEach(([s,d])=>{for(const k of [-1,1]){c.beginPath();c.moveTo(x+s*4,y+5);c.lineTo(x+d,y+5+k*2.5);c.stroke()}});
 }
 function glossSplat(c,x,y,r,col,seed){c.save();c.shadowColor='rgba(0,0,0,.35)';c.shadowBlur=4;splat(c,x,y,r,col,seed);c.restore();c.fillStyle='rgba(255,255,255,.35)';c.beginPath();c.ellipse(x-r*.3,y-r*.35,r*.35,r*.2,-.5,0,7);c.fill()}
 function realTankSide(c,x,y,col,ang){ // side-view tank with shading
@@ -1069,11 +958,11 @@ function helmetHead(c,cx,cy,col){ // front view defender with shading
 
 // ---------- army mini-games ----------
 Object.assign(MG,{
-  siege:{icon:'🎯',title:'Paintball siege',hint:'Tap defenders when they pop up in the windows. Don’t splat the cat!'},
-  artillery:{icon:'💣',title:'Tank artillery',hint:'Drag back from your tank to aim, let go to fire. Watch the wind! 3 shots.'},
-  charge:{icon:'🏃',title:'Charge!',hint:'Drag left and right to steer your squad. Dodge oncoming cars, barricades and potholes!'},
-  airdrop:{icon:'🪂',title:'Air drop',hint:'Tap to drop a crate onto the roof. Drop early — crates keep the plane’s speed! The plane speeds up each time.'},
-  flagrush:{icon:'🚩',title:'Flag rush',hint:'Tap when the marker is in the green zone to pull. Good timing beats mashing!'}
+  siege:{icon:'<i class=ti-target></i>',title:'Paintball siege',hint:'Tap defenders when they pop up in the windows. Don’t splat the cat!'},
+  artillery:{icon:'<i class=ti-bomb></i>',title:'Tank artillery',hint:'Drag back from your tank to aim, let go to fire. Watch the wind! 3 shots.'},
+  charge:{icon:'<i class=ti-run></i>',title:'Charge!',hint:'Drag left and right to steer your squad. Dodge oncoming cars, barricades and potholes!'},
+  airdrop:{icon:'<i class=ti-parachute></i>',title:'Air drop',hint:'Tap to drop a crate onto the roof. Drop early — crates keep the plane’s speed! The plane speeds up each time.'},
+  flagrush:{icon:'<i class=ti-flag></i>',title:'Flag rush',hint:'Tap when the marker is in the green zone to pull. Good timing beats mashing!'}
 });
 const svgImgCache={};
 function svgImg(svg){if(!svgImgCache[svg]){const im=new Image();im.src='data:image/svg+xml;utf8,'+encodeURIComponent(svg.replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" '));svgImgCache[svg]=im}return svgImgCache[svg]}
@@ -1098,7 +987,7 @@ Object.assign(GAMES,{
     slots.push({x:bx+bw/2-36,y:by+bh-92,w:72,h:92,door:true});
     const foe=api.place.owner?colorOf(api.place.owner):'#80868b';
     return{
-      update(dt){if(time<=0)return;time-=dt;api.status('⏱️ '+Math.max(0,time).toFixed(1)+'s · Splats '+hits);
+      update(dt){if(time<=0)return;time-=dt;api.status('<i class=ti-stopwatch></i> '+Math.max(0,time).toFixed(1)+'s · Splats '+hits);
         spawn-=dt;if(spawn<=0&&time>.6){spawn=.55+Math.random()*.35-Math.min(.25,(12-time)*.02);
           const free=slots.filter(s=>!ups.some(u=>u.s===s));if(free.length){const s=free[Math.floor(Math.random()*free.length)];const cat=Math.random()<.14;if(!cat)shown++;ups.push({s,t:0,life:.85+Math.random()*.45-Math.min(.3,(12-time)*.025),cat})}}
         ups.forEach(u=>u.t+=dt);ups=ups.filter(u=>u.t<u.life);
@@ -1122,7 +1011,7 @@ Object.assign(GAMES,{
           if(s.door){c.fillStyle='#ffd54f';c.beginPath();c.arc(s.x+s.w-12,s.y+s.h/2,3,0,7);c.fill()}});
         ups.forEach(u=>{const s=u.s,k=Math.min(1,u.t/.12,(u.life-u.t)/.12),cx=s.x+s.w/2,cy=s.y+s.h-24*k;
           c.save();c.beginPath();c.rect(s.x+2,s.y+2,s.w-4,s.h-4);c.clip();
-          if(u.cat)emoji(c,'🐱',cx,cy+6,40);else helmetHead(c,cx,cy,foe);
+          if(u.cat)drawCat(c,cx,cy+8);else helmetHead(c,cx,cy,foe);
           c.restore()});
         splats.forEach(p=>glossSplat(c,p.x,p.y,p.r,ME.color,p.s));
         grit(c,W,H);c.fillStyle='rgba(255,255,255,.7)';c.font='700 12px system-ui';c.textAlign='center';c.fillText('tap to fire paintballs',W/2,H-10);
@@ -1178,7 +1067,7 @@ Object.assign(GAMES,{
         trail.forEach(([x,y],k)=>{c.fillStyle=`rgba(220,220,220,${k/trail.length*.5})`;c.beginPath();c.arc(x,y,2+k/trail.length*4,0,7);c.fill()});
         if(shell){c.fillStyle='#263238';c.beginPath();c.ellipse(shell.x,shell.y,6,4,Math.atan2(shell.vy,shell.vx),0,7);c.fill()}
         booms.forEach(b=>{const t=b.t/.6;c.globalAlpha=1-t;const eg=c.createRadialGradient(b.x,b.y,0,b.x,b.y,10+t*55);eg.addColorStop(0,'#fff59d');eg.addColorStop(.4,'#ff9800');eg.addColorStop(1,'rgba(90,60,40,0)');c.fillStyle=eg;c.beginPath();c.arc(b.x,b.y,10+t*55,0,7);c.fill();c.globalAlpha=1});
-        if(!shell&&!aim&&shots<3){c.fillStyle='rgba(0,0,0,.5)';roundRect(c,tx+28,gy-58,130,22,8);c.fill();c.fillStyle='#fff';c.font='800 12px system-ui';c.textAlign='left';c.fillText('← drag back to aim',tx+36,gy-43)}
+        if(!shell&&!aim&&shots<3){c.fillStyle='rgba(0,0,0,.5)';roundRect(c,tx+28,gy-58,130,22,8);c.fill();c.fillStyle='#fff';c.font='800 12px system-ui';c.textAlign='left';c.fillText('<i class=ti-arrow-left></i> drag back to aim',tx+36,gy-43)}
         grit(c,W,H);for(let i=0;i<3;i++){c.fillStyle=i<shots?(scores[i]>.6?'#34a853':scores[i]>0?'#8ab4f8':'#ea4335'):'rgba(255,255,255,.55)';c.beginPath();c.arc(W-60+i*20,24,6,0,7);c.fill()}
       }};
   },
@@ -1188,7 +1077,7 @@ Object.assign(GAMES,{
     const types=[{k:'car',w:34,h:58},{k:'bar',w:70,h:16},{k:'hole',w:30,h:26}];
     return{
       update(dt){if(time<=0)return;time-=dt;const sp=240+(12-time)*14;scroll+=sp*dt;hitFlash=Math.max(0,hitFlash-dt);inv=Math.max(0,inv-dt);
-        api.status('⏱️ '+Math.max(0,time).toFixed(1)+'s · Squad '+squad+'/8');
+        api.status('<i class=ti-stopwatch></i> '+Math.max(0,time).toFixed(1)+'s · Squad '+squad+'/8');
         spawn-=dt;if(spawn<=0&&time>1.2){spawn=.5+Math.random()*.4-Math.min(.25,(12-time)*.025);const t=types[Math.floor(Math.random()*3)];
           const lane=Math.random()<.5?0:1,lx=road.x+(lane+.5)*road.w/2-t.w/2+(Math.random()*16-8);
           obs.push({...t,x:t.k==='car'?lx:road.x+8+Math.random()*(road.w-16-t.w),y:-t.h-(t.k==='car'?60:0),v:t.k==='car'?120+Math.random()*110:0,col:['#5b6b4a','#4e5458','#6d4c41','#3e4a59','#7a6a55'][Math.floor(Math.random()*5)]})}
@@ -1221,7 +1110,7 @@ Object.assign(GAMES,{
         const sy=H-110;if(!(inv&&Math.floor(inv*12)%2)){const sv=soldier(ME.color,22);for(let i=0;i<squad;i++){const r=Math.floor(i/4),k=i%4;c.fillStyle='rgba(0,0,0,.25)';c.beginPath();c.ellipse(sx-27+k*18+2,sy+8+r*22+3,8,6,0,0,7);c.fill();drawSvg(c,sv,sx-27+k*18,sy+8+r*22,22,22)}}
         smoke(c,W-24,H*.35,performance.now()/1000,.7);grit(c,W,H);
         if(hitFlash){c.fillStyle='rgba(234,67,53,'+hitFlash+')';c.fillRect(0,0,W,H)}
-        if(time>10.5){c.fillStyle='rgba(0,0,0,.55)';roundRect(c,W/2-80,H-30,160,22,8);c.fill();c.fillStyle='#fff';c.font='800 13px system-ui';c.textAlign='center';c.fillText('← drag to steer →',W/2,H-14)}
+        if(time>10.5){c.fillStyle='rgba(0,0,0,.55)';roundRect(c,W/2-80,H-30,160,22,8);c.fill();c.fillStyle='#fff';c.font='800 13px system-ui';c.textAlign='center';c.fillText('<i class=ti-arrow-left></i> drag to steer <i class=ti-arrow-right></i>',W/2,H-14)}
       }};
   },
   // 4) AIR DROP — time the crate drops onto a moving roof
@@ -1260,7 +1149,7 @@ Object.assign(GAMES,{
     return{
       update(dt){if(time<=0)return;time-=dt;flash=Math.max(0,flash-dt);m+=dir*dt*(1.1+(10-time)*.07);if(m>1){m=1;dir=-1}if(m<0){m=0;dir=1}
         pos-=dt*(.07+(10-time)*.006);pos=Math.max(-1,Math.min(1,pos));
-        api.status('⏱️ '+Math.max(0,time).toFixed(1)+'s'+(combo>1?' · combo ×'+combo:''));
+        api.status('<i class=ti-stopwatch></i> '+Math.max(0,time).toFixed(1)+'s'+(combo>1?' · combo ×'+combo:''));
         if(pos>=1){time=0}if(time<=0)api.end((pos+1)/2)},
       tap(){if(time<=0)return;const d=Math.abs(m-zone);
         if(d<.08){combo++;pos+=.13+Math.min(.06,combo*.01);api.pop(combo>2?'PERFECT ×'+combo:'PERFECT!',W/2,H*.32,'#fbbc04');zone=.25+Math.random()*.5;popSound()}
@@ -1328,7 +1217,7 @@ async function marchTroops(p,sent,tk){tk=tk||0;
   const offsets=()=>{const mp=mpp(),out=[];let o=0;
     units.forEach((u,i)=>{if(u.kind==='tank'){out.push(o);o+=tankPx()*mp*1.3}else{if(u.lane<0&&i>tk)o+=solPx()*mp*1.35;if(i===tk&&tk)o+=solPx()*mp*0.4;out.push(o)}});return out};
   follow=false;map.setView(at(0),19,{animate:false}); // camera zooms in and follows the column
-  toast(`🪖 ${sent} troops${tk?` + ${tk} tank${tk>1?'s':''}`:''} marching to ${p.name}…`);
+  toast(`<i class=ti-users-group></i> ${sent} troops${tk?` + ${tk} tank${tk>1?'s':''}`:''} marching to ${p.name}…`);
   await new Promise(res=>{const t0=performance.now();(function step(){
     const t=(performance.now()-t0)/1000,offs=offsets();
     const mid=offs[Math.floor(offs.length/2)];map.panTo(at(t*speed-mid),{animate:false});
@@ -1342,31 +1231,31 @@ function playBattle(id,sent,tk){
   const p=S.places[id];
   const key=gameFor(p),m=MG[key];
   battle={id,sent,tk:tk||0,taps:0};
-  $('bTitle').textContent=`${m.icon} ${m.title} — ${p.owner==null?'capture':'attack'} ${p.name}`;
+  $('bTitle').innerHTML=`${m.icon} ${m.title} — ${p.owner==null?'capture':'attack'} ${p.name}`;
   $('bInfo').textContent=m.hint;$('bTimer').textContent='';
   $('battle').classList.add('show');Music.duck(true);
   runMiniGame(key,p,score=>{
     battle.taps=Math.round(score*40);
-    $('bTimer').textContent=`Power ×${(1+battle.taps*0.015).toFixed(2)} — 🪖 ${sent} troops${battle.tk?` + ${battle.tk} tank${battle.tk>1?'s':''}`:''} charging!`;
+    $('bTimer').innerHTML=`Power ×${(1+battle.taps*0.015).toFixed(2)} — <i class=ti-users-group></i> ${sent} troops${battle.tk?` + ${battle.tk} tank${battle.tk>1?'s':''}`:''} charging!`;
     setTimeout(finishBattle,700);
   });
 }
 async function finishBattle(){
   const b=battle;battle=null;$('battle').classList.remove('show');Music.duck(false);
   const p=S.places[b.id];
-  showMsg(`<h1>⚔️ Fighting…</h1><p style="text-align:center">${soldierRow(ME.color,5,30)}<br>Your troops are storming ${p.name}…</p>`);
+  showMsg(`<h1><i class=ti-swords></i> Fighting…</h1><p style="text-align:center">${soldierRow(ME.color,5,30)}<br>Your troops are storming ${p.name}…</p>`);
   let r;
   try{r=await rpc('attack2',{...auth(),p_place:p.sid,p_sent:b.sent,p_taps:b.taps,p_tanks:b.tk||0})}
-  catch(e){showMsg(`<h1>😬 Hold up</h1><p style="text-align:center">${e.message}</p><button class="btn primary" onclick="hideMsg()">OK</button>`);return}
+  catch(e){showMsg(`<h1><i class=ti-alert-circle></i> Hold up</h1><p style="text-align:center">${e.message}</p><button class="btn primary" onclick="hideMsg()">OK</button>`);return}
   S.coins=r.coins;S.crew=r.crew;S.tanks=r.tanks;selTanks=Math.min(selTanks,S.tanks);
   let html;
   if(r.season_won){
-    html=`<h1>👑 YOU OWN ALL OF BUCKLEY!</h1><p style="text-align:center">You won the season and made the Hall of Fame. The map resets now — defend your title!</p>`;
+    html=`<h1><i class=ti-crown></i> YOU OWN ALL OF BUCKLEY!</h1><p style="text-align:center">You won the season and made the Hall of Fame. The map resets now — defend your title!</p>`;
   }else if(r.win){
     p.owner=ME.id;p.def=Math.round(p.maxDef*.6);
-    html=`<h1>🎉 Victory!</h1><p style="text-align:center">You took <b>${p.name}</b>${r.prev?' from '+r.prev:''}!<br>Power ${r.atk} vs ${r.dfn} · You lost ${r.lost} troops.</p>`;
+    html=`<h1><i class=ti-confetti></i> Victory!</h1><p style="text-align:center">You took <b>${p.name}</b>${r.prev?' from '+r.prev:''}!<br>Power ${r.atk} vs ${r.dfn} · You lost ${r.lost} troops.</p>`;
   }else{
-    html=`<h1>💥 Pushed back!</h1><p style="text-align:center">${p.name} held on.<br>Power ${r.atk} vs ${r.dfn} · You lost ${r.lost} troops${r.tanks_lost?` and ${r.tanks_lost} tank${r.tanks_lost>1?'s':''} 💥`:''}.<br>But its defense dropped — try again!</p>`;
+    html=`<h1><i class=ti-flame></i> Pushed back!</h1><p style="text-align:center">${p.name} held on.<br>Power ${r.atk} vs ${r.dfn} · You lost ${r.lost} troops${r.tanks_lost?` and ${r.tanks_lost} tank${r.tanks_lost>1?'s':''} <i class=ti-flame></i>`:''}.<br>But its defense dropped — try again!</p>`;
   }
   showMsg(html+`<button class="btn primary" onclick="hideMsg()">OK</button>`);
   updateHUD();refreshPins();poll();
@@ -1378,15 +1267,15 @@ function hideMsg(){$('msg').classList.remove('show')}
 function leaderboard(){
   const counts={};S.places.forEach(p=>{if(p.owner)counts[p.owner]=(counts[p.owner]||0)+1});
   const list=Object.values(PL).map(pl=>({pl,c:counts[pl.id]||0})).filter(x=>x.c>0||x.pl.id===ME.id).sort((a,b)=>b.c-a.c).slice(0,15);
-  const rows=list.map((x,i)=>`<div class="lb"><span style="width:20px;color:#5f6368">${i+1}</span><span class="dot" style="background:${x.pl.color}"></span>${x.pl.id===ME.id?'<b>'+x.pl.name+' (you)</b>':x.pl.name}${x.pl.wins?` <span class="wins">👑×${x.pl.wins}</span>`:''}<b>${x.c} 🏢</b></div>`).join('')||'<p>Nobody owns anything yet — be the first!</p>';
+  const rows=list.map((x,i)=>`<div class="lb"><span style="width:20px;color:#5f6368">${i+1}</span><span class="dot" style="background:${x.pl.color}"></span>${x.pl.id===ME.id?'<b>'+x.pl.name+' (you)</b>':x.pl.name}${x.pl.wins?` <span class="wins"><i class=ti-crown></i>×${x.pl.wins}</span>`:''}<b>${x.c} <i class=ti-building></i></b></div>`).join('')||'<p>Nobody owns anything yet — be the first!</p>';
   const free=S.places.filter(p=>!p.owner).length;
-  showMsg(`<h1>🏆 Season ${seasonId||1}</h1>${rows}<p style="color:#5f6368;font-size:13px">${S.places.length} places in Buckley · ${free} still unclaimed.</p>
-    <button class="btn ghost" onclick="hallOfFame()">👑 Hall of Fame</button><button class="btn primary" onclick="hideMsg()">Back</button>`);
+  showMsg(`<h1><i class=ti-trophy></i> Season ${seasonId||1}</h1>${rows}<p style="color:#5f6368;font-size:13px">${S.places.length} places in Buckley · ${free} still unclaimed.</p>
+    <button class="btn ghost" onclick="hallOfFame()"><i class=ti-crown></i> Hall of Fame</button><button class="btn primary" onclick="hideMsg()">Back</button>`);
 }
 async function hallOfFame(){
   let rows='';
-  try{const h=await rpc('hall_of_fame');rows=h.map(x=>`<div class="lb"><span style="width:76px;color:#5f6368">Season ${x.season}</span><span class="dot" style="background:${x.color}"></span>${x.winner}<b>👑</b></div>`).join('')}catch(e){}
-  showMsg(`<h1>👑 Hall of Fame</h1>${rows||'<p style="text-align:center">No champions yet. Own all of Buckley to be the first!</p>'}<button class="btn ghost" onclick="leaderboard()">Back to standings</button><button class="btn primary" onclick="hideMsg()">Close</button>`);
+  try{const h=await rpc('hall_of_fame');rows=h.map(x=>`<div class="lb"><span style="width:76px;color:#5f6368">Season ${x.season}</span><span class="dot" style="background:${x.color}"></span>${x.winner}<b><i class=ti-crown></i></b></div>`).join('')}catch(e){}
+  showMsg(`<h1><i class=ti-crown></i> Hall of Fame</h1>${rows||'<p style="text-align:center">No champions yet. Own all of Buckley to be the first!</p>'}<button class="btn ghost" onclick="leaderboard()">Back to standings</button><button class="btn primary" onclick="hideMsg()">Close</button>`);
 }
 
 // ---------- search ----------
@@ -1394,15 +1283,15 @@ $('search').addEventListener('input',e=>{
   const q=e.target.value.trim().toLowerCase(),box=$('results');
   if(!q){box.style.display='none';return}
   const hits=S.places.filter(p=>p.name.toLowerCase().includes(q)||p.kind.toLowerCase().includes(q)).slice(0,8);
-  box.innerHTML=hits.length?hits.map(p=>`<div class="res" onclick="pickResult(${p.id})"><span class="dot" style="background:${colorOf(p.owner)}"></span>${p.emoji} ${p.name}<span style="margin-left:auto;color:#5f6368;font-size:13px">${fmtDist(dist(S.me,p))}</span></div>`).join(''):'<div class="res">No places found</div>';
+  box.innerHTML=hits.length?hits.map(p=>`<div class="res" onclick="pickResult(${p.id})"><span class="dot" style="background:${colorOf(p.owner)}"></span>${kindIcon(p.kind)} ${esc(p.name)}<span style="margin-left:auto;color:#5f6368;font-size:13px">${fmtDist(dist(S.me,p))}</span></div>`).join(''):'<div class="res">No places found</div>';
   box.style.display='block';
 });
 function pickResult(id){$('results').style.display='none';$('search').value='';$('search').blur();map.setView([S.places[id].lat,S.places[id].lng],18);openPlace(id)}
 
 // ---------- buttons ----------
 $('recruit').onclick=async()=>{
-  if(S.coins<20){toast('Need 20🪙 — own more places to earn faster');return}
-  try{const r=await rpc('recruit',auth());S.coins=r.coins;S.crew=r.crew;updateHUD();toast('🪖 +5 troops trained!')}catch(e){toast(e.message)}
+  if(S.coins<20){toast('Need 20<i class=ti-coin></i> — own more places to earn faster');return}
+  try{const r=await rpc('recruit',auth());S.coins=r.coins;S.crew=r.crew;updateHUD();toast('<i class=ti-users-group></i> +5 troops trained!')}catch(e){toast(e.message)}
 };
 $('locBtn').onclick=()=>{follow=true;map.setView([S.me.lat,S.me.lng],18)};
 $('gpsBtn').onclick=toggleGPS;
@@ -1412,24 +1301,24 @@ async function myArmy(){
   const mineP=S.places.filter(mine).sort((a,b)=>a.def/a.maxDef-b.def/b.maxDef);
   const inc=10+mineP.reduce((a,p)=>a+p.income,0); // coins per 10 minutes (server: 1/min + income/10 per min)
   let taken=[];try{taken=await rpc('taken_colors')}catch(e){}
-  const rows=mineP.map(p=>`<div class="lb" style="cursor:pointer" onclick="hideMsg();map.setView([${p.lat},${p.lng}],18);openPlace(${p.id})">${p.emoji} ${p.name}<b style="color:${p.def<p.maxDef*0.5?'#d93025':'#202124'}">🛡️ ${Math.round(p.def)}/${Math.round(p.maxDef)}</b></div>`).join('')
+  const rows=mineP.map(p=>`<div class="lb" style="cursor:pointer" onclick="hideMsg();map.setView([${p.lat},${p.lng}],18);openPlace(${p.id})">${kindIcon(p.kind)} ${esc(p.name)}<b style="color:${p.def<p.maxDef*0.5?'#d93025':'#202124'}"><i class=ti-shield></i> ${Math.round(p.def)}/${Math.round(p.maxDef)}</b></div>`).join('')
     ||'<p style="text-align:center;color:#5f6368">You don’t own any places yet. Walk to one and send your troops!</p>';
   const sw=COLORS.map(c=>{const t=c!==ME.color&&taken.includes(c);return `<div class="sw${c===ME.color?' on':''}${t?' taken':''}" ${t?'':`onclick="recolor('${c}')"`} style="background:${c}"></div>`}).join('');
-  showMsg(`<h1>🪖 My Army</h1>
+  showMsg(`<h1><i class=ti-users-group></i> My Army</h1>
     <div class="armyRow">${soldierRow(ME.color,Math.min(10,Math.max(1,Math.ceil(S.crew/10))),34)}</div>
-    <div class="row"><div class="stat"><b>🪖 ${Math.floor(S.crew)}</b>troops</div><div class="stat"><b>${tank(ME.color,18)} ${S.tanks||0}</b>tanks</div><div class="stat"><b>🪙 ${Math.floor(S.coins)}</b>of 2,000 max</div><div class="stat"><b>+${inc}🪙</b>every 10 min</div></div>
+    <div class="row"><div class="stat"><b><i class=ti-users-group></i> ${Math.floor(S.crew)}</b>troops</div><div class="stat"><b>${tank(ME.color,18)} ${S.tanks||0}</b>tanks</div><div class="stat"><b><i class=ti-coin></i> ${Math.floor(S.coins)}</b>of 2,000 max</div><div class="stat"><b>+${inc}<i class=ti-coin></i></b>every 10 min</div></div>
     <p style="font-size:13px;color:#5f6368;margin:6px 0">You get +1 troop every 2 minutes (max 150). Coins stop at 2,000, and only your first 4 hours away count — so come back and spend them! Your gold-ringed pins are yours — the number under each one is how many defenders it has. Weakest places are listed first.</p>
     <div style="background:#f1f3f4;border-radius:14px;padding:12px;margin-top:8px;display:flex;align-items:center;gap:12px">
       <div>${tank(ME.color,40)}</div>
       <div style="flex:1;font-size:13px"><b style="font-size:15px">Tanks</b><br>1 tank hits as hard as 25 troops. Never lost when you win — 50/50 chance to get blown up if you lose. Max 10.</div></div>
-    <button class="btn primary" onclick="buyTank()" ${S.coins<150||(S.tanks||0)>=10?'disabled':''}>🛠️ Build a tank · 150🪙</button>
+    <button class="btn primary" onclick="buyTank()" ${S.coins<150||(S.tanks||0)>=10?'disabled':''}><i class=ti-tool></i> Build a tank · 150<i class=ti-coin></i></button>
     <h3 style="margin:10px 0 2px">Your places (${mineP.length})</h3>${rows}
     <h3 style="margin:14px 0 4px">Your color</h3><div id="swatches" style="display:flex;flex-wrap:wrap;gap:8px">${sw}</div>
     <button class="btn primary" onclick="hideMsg()">Back to the map</button>`);
 }
 async function recolor(c){
   try{await rpc('change_color',{...auth(),p_color:c});ME.color=c;try{localStorage.setItem(ID_KEY,JSON.stringify(ME))}catch(e){}
-    if(PL[ME.id])PL[ME.id].color=c;refreshPins();updateHUD();toast('🎨 New color!');myArmy()}
+    if(PL[ME.id])PL[ME.id].color=c;refreshPins();updateHUD();toast('<i class=ti-palette></i> New color!');myArmy()}
   catch(e){toast(e.message)}
 }
 
@@ -1472,8 +1361,8 @@ const Music=(()=>{
   function sched(){const s=60/92/4;if(nextT<audioCtx.currentTime)nextT=audioCtx.currentTime+0.05;while(nextT<audioCtx.currentTime+0.15){play(step,nextT,s);step=(step+1)%128;nextT+=s}}
   function start(){if(!on||timer)return;try{ctx();if(audioCtx.state==='suspended')audioCtx.resume();nextT=audioCtx.currentTime+0.1;timer=setInterval(sched,25)}catch(e){}}
   function stop(){if(timer){clearInterval(timer);timer=null}}
-  function icon(){const b=$('musicBtn');if(b)b.textContent=on?'🔊':'🔇'}
-  function toggle(){on=!on;try{localStorage.setItem('buckleyMusic',on?'on':'off')}catch(e){}icon();if(on){start();toast('🎵 Music on')}else{stop();toast('🔇 Music off')}}
+  function icon(){const b=$('musicBtn');if(b)b.innerHTML=on?'<i class=ti-volume></i>':'<i class=ti-volume-off></i>'}
+  function toggle(){on=!on;try{localStorage.setItem('buckleyMusic',on?'on':'off')}catch(e){}icon();if(on){start();toast('<i class=ti-music></i> Music on')}else{stop();toast('<i class=ti-volume-off></i> Music off')}}
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();else if(map)start()});
   icon();
   return{start,stop,toggle,duck(v){if(gain)gain.gain.setTargetAtTime(v?0.12:0.32,audioCtx.currentTime,0.3)}};
@@ -1481,23 +1370,24 @@ const Music=(()=>{
 $('musicBtn').onclick=()=>Music.toggle();
 
 // ---------- version + what's new ----------
-const VERSION='0.14.0';
+const VERSION='0.15.0';
 const CHANGELOG=[
-  ['0.14.0','Fairer game',['Coins come in slower: 1 per minute plus a bit from each place you own','🏦 Coin vault holds 2,000 max; only your first 4 hours away count','Troops: +1 every 2 minutes, max 150','Charge!: cars now drive at you in their lanes with headlights; potholes and walls stay on the road']],
+  ['0.15.0','Photos on the map',['Map pins show a real street photo of each building (from Mapillary) when one exists','All emojis replaced with clean icons','Picking a different photo, or marking one Wrong, updates the pin too']],
+  ['0.14.0','Fairer game',['Coins come in slower: 1 per minute plus a bit from each place you own','<i class=ti-building-bank></i> Coin vault holds 2,000 max; only your first 4 hours away count','Troops: +1 every 2 minutes, max 150','Charge!: cars now drive at you in their lanes with headlights; potholes and walls stay on the road']],
   ['0.13.1','Mini-game fixes',['Mini-games are now spread evenly across Buckley — no more air drop everywhere','Air drop building stays still (the plane speeds up instead)']],
-  ['0.13.0','New army mini-games',['🎯 Paintball siege at shops — splat defenders in the windows (not the cat!)','💣 Tank artillery at big landmarks — aim, mind the wind, hit the flag','🏃 Charge! at gas stations & roadside spots — steer your squad around wrecks','🪂 Air drop at restaurants & cafés — land crates on the roof','🚩 Flag rush at parks — tug of war with timing','Gritty war look: storm skies, smoke, Mount Rainier in the distance']],
-  ['0.12.0','Background music',['🎵 New background track: “Hometown Patrol” plays while you explore','It gets quieter during battles','🔊 button turns music on or off (the game remembers your choice)']],
-  ['0.11.0','Army men and tanks!',['🛠️ Build tanks in My Army (150🪙) — 1 tank hits as hard as 25 troops','Troops and tanks drawn from above, life-size on the map, marching down real streets while the camera follows','Tanks roll down the street with your army men','Your crew is now an army of little plastic soldiers in your color','Send troops marching down real streets to capture buildings (up to 200 m away)','Every building shows its defenders — gold-ringed pins are yours','🪖 My Army: see your troops, income, and all your places (weakest first)','Every player has their own color now — no copycats']],
+  ['0.13.0','New army mini-games',['<i class=ti-target></i> Paintball siege at shops — splat defenders in the windows (not the cat!)','<i class=ti-bomb></i> Tank artillery at big landmarks — aim, mind the wind, hit the flag','<i class=ti-run></i> Charge! at gas stations & roadside spots — steer your squad around wrecks','<i class=ti-parachute></i> Air drop at restaurants & cafés — land crates on the roof','<i class=ti-flag></i> Flag rush at parks — tug of war with timing','Gritty war look: storm skies, smoke, Mount Rainier in the distance']],
+  ['0.12.0','Background music',['<i class=ti-music></i> New background track: “Hometown Patrol” plays while you explore','It gets quieter during battles','<i class=ti-volume></i> button turns music on or off (the game remembers your choice)']],
+  ['0.11.0','Army men and tanks!',['<i class=ti-tool></i> Build tanks in My Army (150<i class=ti-coin></i>) — 1 tank hits as hard as 25 troops','Troops and tanks drawn from above, life-size on the map, marching down real streets while the camera follows','Tanks roll down the street with your army men','Your crew is now an army of little plastic soldiers in your color','Send troops marching down real streets to capture buildings (up to 200 m away)','Every building shows its defenders — gold-ringed pins are yours','<i class=ti-users-group></i> My Army: see your troops, income, and all your places (weakest first)','Every player has their own color now — no copycats']],
   ['0.10.1','Smoother walking',['Your locator walks a bit slower so it’s easier to follow on the map']],
-  ['0.10.0','Capture mini-games!',['No more tap-spamming — every capture is a mini-game','🎯 Timing throw at shops, ⛽ Fill ’er up at gas stations, 🍔 Burger stack at restaurants','☕ Rush hour orders at cafés, 🏦 Crack the safe at banks, 🏫 Pop quiz at schools, 🍂 Leaf catcher at parks','Play better = your crew hits harder (up to ×1.6)']],
-  ['0.9.0','ONLINE MULTIPLAYER!',['Buckley Takeover is online — every player fights over the same real map','Pick your player name and color','No more computer crews: every rival is a real person','Own every place to win the season, get into the 👑 Hall of Fame, and the map resets','Your location stays private — other players only see who owns each building']],
+  ['0.10.0','Capture mini-games!',['No more tap-spamming — every capture is a mini-game','<i class=ti-target></i> Timing throw at shops, <i class=ti-gas-station></i> Fill ’er up at gas stations, <i class=ti-burger></i> Burger stack at restaurants','<i class=ti-coffee></i> Rush hour orders at cafés, <i class=ti-building-bank></i> Crack the safe at banks, <i class=ti-school></i> Pop quiz at schools, <i class=ti-leaf></i> Leaf catcher at parks','Play better = your crew hits harder (up to ×1.6)']],
+  ['0.9.0','ONLINE MULTIPLAYER!',['Buckley Takeover is online — every player fights over the same real map','Pick your player name and color','No more computer crews: every rival is a real person','Own every place to win the season, get into the <i class=ti-crown></i> Hall of Fame, and the map resets','Your location stays private — other players only see who owns each building']],
   ['0.8.2','Click sounds',['Buttons and places make a little “pop” when you tap them']],
-  ['0.8.1','Smarter building photos',['Skips photos taken too close (wall close-ups) or too far away','Zooms in on far-away buildings','👎 Wrong button hides a bad photo for good','The game remembers which photo you picked for each building']],
+  ['0.8.1','Smarter building photos',['Skips photos taken too close (wall close-ups) or too far away','Zooms in on far-away buildings','<i class=ti-thumb-down></i> Wrong button hides a bad photo for good','The game remembers which photo you picked for each building']],
   ['0.8.0','Walk on the streets',['Tap the map and you walk along real streets and paths instead of cutting straight through town','A dotted line shows the way you’re walking']],
-  ['0.7.2','Photos that line up',['Better aiming so the building is in the middle of the photo','Drag 360° photos left and right to look around','🔄 Other photo — flip through up to 6 street photos of each building']],
+  ['0.7.2','Photos that line up',['Better aiming so the building is in the middle of the photo','Drag 360° photos left and right to look around','<i class=ti-refresh></i> Other photo — flip through up to 6 street photos of each building']],
   ['0.7.1','Better building photos',['360° street photos now zoom in on the building instead of showing the whole stretched-out view','Prefers normal photos aimed right at the building']],
-  ['0.7.0','Building photos',['Tap a building to see a real street photo of it (from Mapillary) when one exists','Aerial photo of every building, and a 👀 Street View button','Version number and this What\'s New screen']],
-  ['0.6.0','Maps upgrade',['🛰️ Satellite view — tap the square in the bottom-left','Blue “YOU” locator dot that points where you’re heading','🧭 Directions to any building, with real walking routes']],
+  ['0.7.0','Building photos',['Tap a building to see a real street photo of it (from Mapillary) when one exists','Aerial photo of every building, and a <i class=ti-eye></i> Street View button','Version number and this What\'s New screen']],
+  ['0.6.0','Maps upgrade',['<i class=ti-satellite></i> Satellite view — tap the square in the bottom-left','Blue “YOU” locator dot that points where you’re heading','<i class=ti-compass></i> Directions to any building, with real walking routes']],
   ['0.5.0','Real Buckley',['Free OpenStreetMap map (no more “API key required”)','Real Buckley places load much more reliably']],
   ['0.4.0','Axiom Games intro',['Tap to start, then the Axiom Games intro with the theme song']],
   ['0.3.0','New look',['Buckley Takeover logo with Mount Rainier','New loading screen with tips']],
@@ -1510,13 +1400,13 @@ if(seenVer!==VERSION)$('newsBtn').innerHTML+='<span class="badge">NEW</span>';
 $('newsBtn').onclick=()=>{
   try{localStorage.setItem('buckleySeenVer',VERSION)}catch(e){}
   const b=$('newsBtn').querySelector('.badge');if(b)b.remove();
-  showMsg(`<h1>✨ What's new</h1><div class="news">${CHANGELOG.map(([v,t,items])=>`<h3>${t} <span>v${v}</span></h3><ul>${items.map(i=>`<li>${i}</li>`).join('')}</ul>`).join('')}</div><button class="btn primary" onclick="hideMsg()">Got it</button>`);
+  showMsg(`<h1><i class=ti-sparkles></i> What's new</h1><div class="news">${CHANGELOG.map(([v,t,items])=>`<h3>${t} <span>v${v}</span></h3><ul>${items.map(i=>`<li>${i}</li>`).join('')}</ul>`).join('')}</div><button class="btn primary" onclick="hideMsg()">Got it</button>`);
 };
 
 // ---------- loading screen ----------
-const TIPS=['Tip: Schools and city buildings pay the most coins.','Tip: Landmarks get tank artillery, shops get paintball sieges — play well to hit harder.','Tip: A failed attack still weakens the defense — try again!','Tip: Fortify your best places so other players bounce off.','Tip: Glowing pins are close enough to capture.','Tip: Turn on 🛰️ to play with your real location.'];
+const TIPS=['Tip: Schools and city buildings pay the most coins.','Tip: Landmarks get tank artillery, shops get paintball sieges — play well to hit harder.','Tip: A failed attack still weakens the defense — try again!','Tip: Fortify your best places so other players bounce off.','Tip: Glowing pins are close enough to capture.','Tip: Turn on <i class=ti-satellite></i> to play with your real location.'];
 let tipI=Math.floor(Math.random()*TIPS.length),loadPct=0,loadDone=false;
-function showTip(){const t=$('tip');t.style.opacity=0;setTimeout(()=>{t.textContent=TIPS[tipI++%TIPS.length];t.style.opacity=.65},400)}
+function showTip(){const t=$('tip');t.style.opacity=0;setTimeout(()=>{t.innerHTML=TIPS[tipI++%TIPS.length];t.style.opacity=.65},400)}
 showTip();const tipTimer=setInterval(showTip,3200);
 const loadTimer=setInterval(()=>{if(loadDone)return;loadPct+=(90-loadPct)*.04;$('loadBar').firstElementChild.style.width=loadPct+'%'},120);
 function endIntro(){const a=$('axiom');if(!a||a.dataset.done)return;a.dataset.done=1;a.style.opacity=0;setTimeout(()=>a.remove(),600)}
@@ -1538,7 +1428,7 @@ let savedPos=null;try{const o=JSON.parse(localStorage.getItem(SAVE_KEY));savedPo
 S={places:[],coins:0,crew:0,tanks:0,mode:'walk',me:savedPos&&savedPos.lat?savedPos:{lat:CENTER[0],lng:CENTER[1]}};
 function begin(){
   $('intro').classList.remove('show');clearInterval(tipTimer);S.mode='walk';
-  initMap();updateHUD();requestAnimationFrame(frame);Music.start();
+  initMap();updateHUD();requestAnimationFrame(frame);Music.start();setTimeout(loadPinPhotos,1500);
   pollTimer=setInterval(poll,4000);setInterval(save,10000);
   toast('Tap the map to walk. Glowing pins are close enough to capture!');
 }
@@ -1550,14 +1440,14 @@ async function showJoin(){
     if(takenColors.includes(pickColor))pickColor=COLORS.find(c=>!takenColors.includes(c))||pickColor}
   $('swatches').innerHTML=COLORS.map(c=>{const t=takenColors.includes(c);return `<div class="sw${c===pickColor?' on':''}${t?' taken':''}" ${t?'':`data-c="${c}"`} style="background:${c}"></div>`}).join('');
   $('swatches').onclick=e=>{const c=e.target.dataset&&e.target.dataset.c;if(!c)return;pickColor=c;showJoin()};
-  $('playBtn').disabled=false;$('playBtn').textContent='▶ JOIN THE TAKEOVER';
+  $('playBtn').disabled=false;$('playBtn').innerHTML=`${ic('player-play')} JOIN THE TAKEOVER`;
   $('playBtn').onclick=async()=>{
     $('joinErr').textContent='';$('playBtn').disabled=true;$('playBtn').textContent='Joining…';
     try{
       const r=await rpc('join_game',{p_name:$('nameIn').value,p_color:pickColor});
       ME=r;try{localStorage.setItem(ID_KEY,JSON.stringify(r))}catch(e){}
       await enterGame();
-    }catch(e){if(e.code==='color_taken'){takenColors=null;showJoin()}$('joinErr').textContent=e.message;$('playBtn').disabled=false;$('playBtn').textContent='▶ JOIN THE TAKEOVER'}
+    }catch(e){if(e.code==='color_taken'){takenColors=null;showJoin()}$('joinErr').textContent=e.message;$('playBtn').disabled=false;$('playBtn').innerHTML=`${ic('player-play')} JOIN THE TAKEOVER`}
   };
 }
 async function enterGame(){
@@ -1577,12 +1467,12 @@ async function startOnline(){
   const online=w.players.length;
   $('loadTxt').textContent=`Buckley is online · Season ${w.season?w.season.id:1}`;
   if(ME&&ME.id){
-    $('playBtn').disabled=false;$('playBtn').textContent='▶ PLAY';
+    $('playBtn').disabled=false;$('playBtn').innerHTML=`${ic('player-play')} PLAY`;
     $('whoami').innerHTML=`Playing as <b style="color:${ME.color}">${ME.name}</b>`;
     $('playBtn').onclick=async()=>{$('playBtn').disabled=true;$('playBtn').textContent='Loading…';
       try{await enterGame()}catch(e){
         if(e.code==='not_logged_in'){try{localStorage.removeItem(ID_KEY)}catch(_){}ME=null;$('whoami').textContent='';showJoin()}
-        else{toast(e.message);$('playBtn').disabled=false;$('playBtn').textContent='▶ PLAY'}}};
+        else{toast(e.message);$('playBtn').disabled=false;$('playBtn').innerHTML=`${ic('player-play')} PLAY`}}};
   }else showJoin();
   setTimeout(finishLoading,Math.max(0,2600-performance.now()));
 }
